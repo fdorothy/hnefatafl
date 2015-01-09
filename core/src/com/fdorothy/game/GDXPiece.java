@@ -7,7 +7,7 @@ import com.badlogic.gdx.math.Rectangle;
 public class GDXPiece {
     Piece piece;
     Rectangle bounds;
-    boolean selected;
+    int x, y;
 
     GDXPiece()
     {
@@ -15,10 +15,12 @@ public class GDXPiece {
 	bounds = new Rectangle(0,0,32,32);
     }
 
-    GDXPiece(Piece p, Rectangle b)
+    GDXPiece(Piece p, Rectangle b, int x, int y)
     {
 	piece = p;
 	bounds = b;
+	this.x=x;
+	this.y=y;
     }
 
     void setBounds(Rectangle rect)
@@ -41,14 +43,10 @@ public class GDXPiece {
 	return piece;
     }
 
-    boolean selected()
+    Piece owner()
     {
-	return selected;
-    }
-
-    public void selected(boolean v)
-    {
-	selected = v;
+	if (piece == Piece.WHITE) return Piece.WHITE;
+	return Piece.RED;
     }
 
 }

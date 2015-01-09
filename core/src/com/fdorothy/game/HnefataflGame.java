@@ -2,100 +2,149 @@ package com.fdorothy.game;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.math.Vector3;
 
 public class HnefataflGame extends ApplicationAdapter {
-    SpriteBatch batch;
-    ShapeRenderer shapeRenderer;
-    Texture red;
-    Texture redKing;
-    Texture white;
-    Texture blankTile;
-    Texture crossTile;
-    Texture red_turn;
-    Texture white_turn;
-    Tafl game;
-    Array <GDXPiece> pieces;
-    GDXPiece selection;
-    Rectangle bounds;
-    Rectangle title_white;
-    Rectangle title_red;
-    Texture wood;
-    private OrthographicCamera camera;
-    private Vector3 touchPos;
-    private BitmapFont font;
-    Vector2 selectionStart;
-    Move move;
+
+    // GDX objects for rendering
+    private SpriteBatch batch;
+    private ShapeRenderer shapeRenderer;
+    private OrthographicCamera cam;
+
+    // GDX objects for images, sound, etc. for the game
+    private Resources res;
+
+    //  stores the GDX piece representations, for picking and rendering
+    private Array <GDXPiece> pieces;
+
+    //  selection and interaction objects
+    private GDXPiece selection;
+    private Vector2 dragStart;
+    private Vector2 dragEnd;
+    private Vector2 dragOffset;
+    private Vector3 cursor;
+
+    private Rectangle bounds;
+    private Rectangle whiteTitle;
+    private Rectangle redTitle;
+    private Move move;
+    private Rectangle screen;
+    private double spacing;
+    private int rows;
+    
+    private Tafl game;
 
     @Override
     public void create () {
 	batch = new SpriteBatch();
 	shapeRenderer = new ShapeRenderer();
-	red = new Texture("red.png");
-	redKing = new Texture("red_king.png");
-	white = new Texture("white.png");
-	blankTile = new Texture("blank_tile.png");
-	crossTile = new Texture("cross_tile.png");
-	wood = new Texture("wood.png");
-	red_turn = new Texture("red_turn.png");
-	white_turn = new Texture("white_turn.png");
-	wood.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
-	touchPos = new Vector3();
-	selectionStart = new Vector2();
+	res = new Resources();
+	cursor = new Vector3();
+	dragStart = new Vector2();
+	dragEnd = new Vector2();
+	dragOffset = new Vector2();
 	move = new Move();
+	screen = new Rectangle(0,0,Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+	cam = new OrthographicCamera();
+	cam.setToOrtho(false, screen.width, screen.height);
+	int w = (int)Math.min(screen.width, screen.height);
+	bounds = new Rectangle((screen.width - w)/2,
+			       (screen.height - w)/2,
+			       w,w);
+	redTitle = new Rectangle(screen.width/2 - res.redTurn.getWidth()/2,
+				 screen.height-res.redTurn.getHeight(),
+				 res.redTurn.getWidth(),
+				 res.redTurn.getHeight());
+	whiteTitle = new Rectangle(screen.width/2 - res.whiteTurn.getWidth()/2,
+				   screen.height-res.whiteTurn.getHeight(),
+				   res.whiteTurn.getWidth(),
+				   res.whiteTurn.getHeight());
+	reset();
+    }
 
-	camera = new OrthographicCamera();
-	camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+    void reset()
+    {
+	game = new Tafl();
+	fillPieces();
+    }
 
-	font = new BitmapFont();
-	font.setColor(Color.RED);
-
-	try {
-	    reset();
-	} catch (Exception e) {
-	    Gdx.app.log("Hnefatafl", "error when creating game: " + e);
+    //  fills in pieces from the Tafl board into the 'pieces' array
+    void fillPieces()
+    {
+	pieces = new Array <GDXPiece>();
+	rows = game.width();
+	spacing = (double)bounds.width / rows;
+	for (int i=0; i<rows; i++) {
+	    for (int j=0; j<rows; j++) {
+		Piece p = game.piece(i,j);
+		if (p != Piece.EMPTY) {
+		    Texture tex;
+		    if (p == Piece.KING)
+			tex = res.king;
+		    else if (p == Piece.RED)
+			tex = res.red;
+		    else if (p == Piece.WHITE)
+			tex = res.white;
+		    else
+			tex = res.white;
+		    float x = (int)(bounds.x + spacing*(i+0.5f) - tex.getWidth()/2.0f);
+		    float y = (int)(bounds.y + spacing*(j+0.5f) - tex.getHeight()/2.0f);
+		    Rectangle r = new Rectangle(x, y, tex.getWidth(), tex.getHeight());
+		    pieces.add(new GDXPiece(p, r, i, j));
+		}
+	    }
 	}
     }
 
-    @Override
-    public void render () {
-	Gdx.gl.glClearColor(0, 0, 0, 1);
-	Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+    public void draw(Texture tex, Rectangle bounds, float u1, float v1, float u2, float v2)
+    {
+	batch.draw(tex,bounds.x,bounds.y,bounds.width,bounds.height,u1,v1,u2,v2);
+    }
 
-	camera.update();
-	batch.setProjectionMatrix(camera.combined);
+    public void draw(Texture tex, Rectangle bounds)
+    {
+	batch.draw(tex,bounds.x,bounds.y,bounds.width,bounds.height);
+    }
+
+    public void renderUI()
+    {
+	// draw the red/white turn indicators
 	batch.begin();
-
-
-	// draw the board
 	if (game.turn() == Piece.RED)
-	    batch.draw(red_turn, title_red.x, title_red.y, title_red.width, title_red.height);
+	    draw(res.redTurn, redTitle);
 	else
-	    batch.draw(white_turn, title_white.x, title_white.y, title_white.width, title_white.height);
+	    draw(res.whiteTurn, whiteTitle);
+	batch.end();
+    }
 
-	batch.draw(wood, bounds.x, bounds.y, bounds.width, bounds.height, 0, 0, 11, 11);
-
+    public void renderBoard()
+    {
+	// draw the board
+	batch.begin();
+	draw(res.wood, bounds, 0, 0, 11, 11);
 	batch.end();
 
+	renderGridLines();
+    }
+
+    public void renderGridLines()
+    {
 	// draw lines on the board designating tiles
-	shapeRenderer.setProjectionMatrix(camera.combined);
 	shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
 	shapeRenderer.setColor(0,0,0,1);
 	int width = game.width();
-	float inc = bounds.width / width;
+	float spacing = bounds.width / width;
 	for (int i=0; i<width; i++) {
-	    shapeRenderer.line(i*inc+bounds.x,bounds.y,i*inc+bounds.x,bounds.y+bounds.height);
-	    shapeRenderer.line(bounds.x,i*inc+bounds.y,bounds.x+bounds.width,i*inc+bounds.y);
+	    shapeRenderer.line(i*spacing+bounds.x,bounds.y,i*spacing+bounds.x,bounds.y+bounds.height);
+	    shapeRenderer.line(bounds.x,i*spacing+bounds.y,bounds.x+bounds.width,i*spacing+bounds.y);
 	}
 
 	//  draw the cross over corner and center pieces
@@ -103,69 +152,89 @@ public class HnefataflGame extends ApplicationAdapter {
 	    for (int j=0; j<width; j++) {
 		Tile t = game.tile(i,j);
 		if (t == Tile.CORNER || t == Tile.CENTER) {
-		    shapeRenderer.line(i*inc+bounds.x, j*inc+bounds.y, (i+1)*inc+bounds.x, (j+1)*inc+bounds.y);
-		    shapeRenderer.line(i*inc+bounds.x, (j+1)*inc+bounds.y, (i+1)*inc+bounds.x, j*inc+bounds.y);
+		    shapeRenderer.line(i*spacing+bounds.x, j*spacing+bounds.y, (i+1)*spacing+bounds.x, (j+1)*spacing+bounds.y);
+		    shapeRenderer.line(i*spacing+bounds.x, (j+1)*spacing+bounds.y, (i+1)*spacing+bounds.x, j*spacing+bounds.y);
 		}
 	    }
 	}
 
 	//  draw the line from the selection start to the selected piece
-	if (selection != null && selectionStart != null) {
+	if (selection != null) {
 	    shapeRenderer.setColor(0.0f, 0.0f, 1.0f, 1.0f);
 	    Rectangle b = selection.getBounds();
-	    shapeRenderer.line(selectionStart.x, selectionStart.y, (int)(b.x+b.width/2.0f), (int)(b.y+b.height/2.0f));
+	    shapeRenderer.line(cursor.x+dragOffset.x, cursor.y+dragOffset.y, dragStart.x+dragOffset.x, dragStart.y+dragOffset.y);
 	}
-
 	shapeRenderer.end();
+    }
 
-
+    public void renderPieces()
+    {
 	// draw pieces
 	batch.begin();
 	for (GDXPiece piece: pieces) {
 	    Rectangle b = piece.getBounds();
 	    Piece p = piece.getPiece();
+	    Texture tex;
 	    switch (p) {
-	    case WHITE:
-		batch.draw(white, b.x, b.y, b.width, b.height);
-		break;
-	    case RED:
-		batch.draw(red, b.x, b.y, b.width, b.height);
-		break;
-	    case KING:
-		batch.draw(redKing, b.x, b.y, b.width, b.height);
-		break;
-	    default:break;
+	    case WHITE: tex=res.white; break;
+	    case RED: tex=res.red; break;
+	    case KING: tex=res.king; break;
+	    default: tex=res.white; break;
 	    }
+	    draw(tex,b);
 	}
 	batch.end();
+    }
 
+    @Override
+    public void render () {
+	Gdx.gl.glClearColor(0, 0, 0, 1);
+	Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+	cam.update();
+	batch.setProjectionMatrix(cam.combined);
+	shapeRenderer.setProjectionMatrix(cam.combined);
+	renderUI();
+	renderBoard();
+	renderPieces();
+	checkInput();
+    }
+
+    public void checkInput()
+    {
 	// check for user input
 	if (Gdx.input.isTouched()) {
-	    touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
-	    camera.unproject(touchPos);
+
+	    // get cursor x,y
+	    cursor.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+	    cam.unproject(cursor);
+
+	    // if we just touched the board then check for hits
 	    if (Gdx.input.justTouched()) {
-		Rectangle area = new Rectangle(touchPos.x-inc/2, touchPos.y-inc/2, inc, inc);
+		int s = (int)spacing;
+		Rectangle area = new Rectangle(cursor.x-s/2, cursor.y-s/2, s, s);
 		// try to find the piece we are touching
 		for (GDXPiece piece: pieces) {
-		    if (piece.bounds.overlaps(area)) {
+		    if (piece.owner() == game.turn() && piece.bounds.overlaps(area)) {
 			selection = piece;
-			selection.bounds.getCenter(selectionStart);
+			selection.bounds.getCenter(dragStart);
+			dragOffset.x = dragStart.x - cursor.x;
+			dragOffset.y = dragStart.y - cursor.y;
 		    }
 		}
 	    }
-	    if (selection != null && selectionStart != null) {
-		selection.bounds.x = (int)(touchPos.x-selection.bounds.width/2.0f);
-		selection.bounds.y = (int)(touchPos.y-selection.bounds.height/2.0f);
+	    if (selection != null) {
+		selection.bounds.x = (int)(cursor.x-selection.bounds.width/2+dragOffset.x);
+		selection.bounds.y = (int)(cursor.y-selection.bounds.height/2+dragOffset.y);
 	    }
 	} else {
 	    if (selection != null) {
 		//  figure out the destination x,y coordinates
-		touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
-		camera.unproject(touchPos);
-		move.srcX((int)(((double)selectionStart.x-bounds.x)/(double)inc));
-		move.srcY((int)(((double)selectionStart.y-bounds.y)/(double)inc));
-		move.dstX((int)(((double)touchPos.x-bounds.x)/(double)inc));
-		move.dstY((int)(((double)touchPos.y-bounds.y)/(double)inc));
+		cursor.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+		cam.unproject(cursor);
+		move.srcX(selection.x);
+		move.srcY(selection.y);
+		move.dstX((int)((cursor.x-bounds.x+dragOffset.x)/spacing));
+		move.dstY((int)((cursor.y-bounds.y+dragOffset.y)/spacing));
 		game.move(move);
 		if (game.winner() != Piece.EMPTY)
 		    try {reset();} catch (Exception e) {}
@@ -173,60 +242,15 @@ public class HnefataflGame extends ApplicationAdapter {
 	    }
 	    selection=null;
 	}
-
     }
 
-    void reset() throws Exception
+    @Override
+    public void dispose()
     {
-	fillBoard();
-	fillPieces();
+	batch.dispose();
+	shapeRenderer.dispose();
+	res.dispose();
+	res=null;
     }
 
-    void fillBoard() throws Exception
-    {
-	game = new Tafl();
-
-	//  calculate the bounding box of the board
-	final float SCREEN_WIDTH = Gdx.graphics.getWidth();
-	final float SCREEN_HEIGHT = Gdx.graphics.getHeight();
-	float width = SCREEN_WIDTH > SCREEN_HEIGHT ? SCREEN_HEIGHT : SCREEN_WIDTH;
-	bounds = new Rectangle((SCREEN_WIDTH - width)/2.0f,
-			       (SCREEN_HEIGHT - width)/2.0f,
-			       width,width);
-	title_red = new Rectangle(SCREEN_WIDTH/2.0f - red_turn.getWidth()/2.0f, SCREEN_HEIGHT-red_turn.getHeight(), red_turn.getWidth(), red_turn.getHeight());
-	title_white = new Rectangle(SCREEN_WIDTH/2.0f - white_turn.getWidth()/2.0f, SCREEN_HEIGHT-white_turn.getHeight(), white_turn.getWidth(), white_turn.getHeight());
-    }
-
-    //  fills in pieces from the Tafl board into the 'pieces' array
-    void fillPieces()
-    {
-	pieces = new Array <GDXPiece>();
-	int w = game.width();
-	float inc = bounds.width / w;
-	for (int i=0; i<w; i++) {
-	    for (int j=0; j<w; j++) {
-		Piece p = game.piece(i,j);
-		if (p != Piece.EMPTY) {
-		    Texture tex = getPieceTexture(p);
-		    float x = (int)(bounds.x + inc*(i+0.5f) - tex.getWidth()/2.0f);
-		    float y = (int)(bounds.y + inc*(j+0.5f) - tex.getHeight()/2.0f);
-		    Rectangle r = new Rectangle(x, y, tex.getWidth(), tex.getHeight());
-		    pieces.add(new GDXPiece(p, r));
-		}
-	    }
-	}
-    }
-
-    Texture getPieceTexture(Piece p)
-    {
-	switch (p) {
-	case WHITE:
-	    return white;
-	case RED:
-	    return red;
-	case KING:
-	    return redKing;
-	default:return null;
-	}
-    }
 }
