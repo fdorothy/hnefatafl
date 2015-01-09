@@ -6,6 +6,8 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -20,14 +22,20 @@ public class HnefataflGame extends ApplicationAdapter {
     Texture white;
     Texture blankTile;
     Texture crossTile;
+    Texture red_turn;
+    Texture white_turn;
     Tafl game;
     Array <GDXPiece> pieces;
     GDXPiece selection;
     Rectangle bounds;
+    Rectangle title_white;
+    Rectangle title_red;
     Texture wood;
     private OrthographicCamera camera;
     private Vector3 touchPos;
+    private BitmapFont font;
     Vector2 selectionStart;
+    Move move;
 
     @Override
     public void create () {
@@ -39,12 +47,18 @@ public class HnefataflGame extends ApplicationAdapter {
 	blankTile = new Texture("blank_tile.png");
 	crossTile = new Texture("cross_tile.png");
 	wood = new Texture("wood.png");
+	red_turn = new Texture("red_turn.png");
+	white_turn = new Texture("white_turn.png");
 	wood.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
 	touchPos = new Vector3();
 	selectionStart = new Vector2();
+	move = new Move();
 
 	camera = new OrthographicCamera();
 	camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+
+	font = new BitmapFont();
+	font.setColor(Color.RED);
 
 	try {
 	    reset();
@@ -64,6 +78,11 @@ public class HnefataflGame extends ApplicationAdapter {
 
 
 	// draw the board
+	if (game.turn() == Piece.RED)
+	    batch.draw(red_turn, title_red.x, title_red.y, title_red.width, title_red.height);
+	else
+	    batch.draw(white_turn, title_white.x, title_white.y, title_white.width, title_white.height);
+
 	batch.draw(wood, bounds.x, bounds.y, bounds.width, bounds.height, 0, 0, 11, 11);
 
 	batch.end();
@@ -120,7 +139,6 @@ public class HnefataflGame extends ApplicationAdapter {
 	}
 	batch.end();
 
-
 	// check for user input
 	if (Gdx.input.isTouched()) {
 	    touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
@@ -140,6 +158,19 @@ public class HnefataflGame extends ApplicationAdapter {
 		selection.bounds.y = (int)(touchPos.y-selection.bounds.height/2.0f);
 	    }
 	} else {
+	    if (selection != null) {
+		//  figure out the destination x,y coordinates
+		touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+		camera.unproject(touchPos);
+		move.srcX((int)(((double)selectionStart.x-bounds.x)/(double)inc));
+		move.srcY((int)(((double)selectionStart.y-bounds.y)/(double)inc));
+		move.dstX((int)(((double)touchPos.x-bounds.x)/(double)inc));
+		move.dstY((int)(((double)touchPos.y-bounds.y)/(double)inc));
+		game.move(move);
+		if (game.winner() != Piece.EMPTY)
+		    try {reset();} catch (Exception e) {}
+		fillPieces();
+	    }
 	    selection=null;
 	}
 
@@ -162,6 +193,8 @@ public class HnefataflGame extends ApplicationAdapter {
 	bounds = new Rectangle((SCREEN_WIDTH - width)/2.0f,
 			       (SCREEN_HEIGHT - width)/2.0f,
 			       width,width);
+	title_red = new Rectangle(SCREEN_WIDTH/2.0f - red_turn.getWidth()/2.0f, SCREEN_HEIGHT-red_turn.getHeight(), red_turn.getWidth(), red_turn.getHeight());
+	title_white = new Rectangle(SCREEN_WIDTH/2.0f - white_turn.getWidth()/2.0f, SCREEN_HEIGHT-white_turn.getHeight(), white_turn.getWidth(), white_turn.getHeight());
     }
 
     //  fills in pieces from the Tafl board into the 'pieces' array

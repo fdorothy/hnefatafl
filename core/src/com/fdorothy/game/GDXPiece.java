@@ -7,7 +7,6 @@ import com.badlogic.gdx.math.Rectangle;
 public class GDXPiece {
     Piece piece;
     Rectangle bounds;
-    Texture tex;
     boolean selected;
 
     GDXPiece()
@@ -51,4 +50,5 @@ public class GDXPiece {
     {
 	selected = v;
     }
+
 }
