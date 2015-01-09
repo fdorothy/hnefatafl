@@ -2,7 +2,7 @@ package com.fdorothy.game;
 
 public class Tafl
 {
-    protected int width;
+    protected int rows;
     protected Piece pieces[];
     protected Tile tiles[];
     protected Piece turn;
@@ -18,12 +18,12 @@ public class Tafl
 
     public Tafl(Tafl rhs)
     {
-	width = rhs.width;
-	pieces = new Piece[width*width];
-	for (int i=0; i<width*width; i++)
+	rows = rhs.rows;
+	pieces = new Piece[rows*rows];
+	for (int i=0; i<rows*rows; i++)
 	    pieces[i] = rhs.pieces[i];
-	tiles = new Tile[width*width];
-	for (int i=0; i<width*width; i++)
+	tiles = new Tile[rows*rows];
+	for (int i=0; i<rows*rows; i++)
 	    tiles[i] = rhs.tiles[i];
 	turn = rhs.turn;
 	winner = rhs.winner;
@@ -41,15 +41,15 @@ public class Tafl
 
     private void set_hnefatafl()
     {
-	width = 11;
-	pieces = new Piece[width*width];
-	tiles = new Tile[width*width];
+	rows = 11;
+	pieces = new Piece[rows*rows];
+	tiles = new Tile[rows*rows];
 
 	//  set up tiles
-	for (int i=0; i<width; i++)
-	    for (int j=0; j<width; j++)
-		if ((i==0 && (j==0 || j==width-1)) ||
-		    (i==width-1 && (j==0 || j==width-1)))
+	for (int i=0; i<rows; i++)
+	    for (int j=0; j<rows; j++)
+		if ((i==0 && (j==0 || j==rows-1)) ||
+		    (i==rows-1 && (j==0 || j==rows-1)))
 		    tile(i,j,Tile.CORNER);
 		else if (i == 5 && j == 5)
 		    tile(i,j,Tile.CENTER);
@@ -57,8 +57,8 @@ public class Tafl
 		    tile(i,j,Tile.BLANK);
 
 	//  clear the board
-	for (int i=0; i<width; i++)
-	    for (int j=0; j<width; j++)
+	for (int i=0; i<rows; i++)
+	    for (int j=0; j<rows; j++)
 		piece(i,j,Piece.EMPTY);
 
 	//  left side of board
@@ -113,28 +113,28 @@ public class Tafl
 
     private void piece(int col, int row, Piece piece)
     {
-	if (!(col < 0 || col >= width || row < 0 || row >= width))
-	    pieces[col+row*width] = piece;
+	if (!(col < 0 || col >= rows || row < 0 || row >= rows))
+	    pieces[col+row*rows] = piece;
     }
 
     public Piece piece(int col, int row)
     {
-	if (col < 0 || col >= width || row < 0 || row >= width)
+	if (col < 0 || col >= rows || row < 0 || row >= rows)
 	    return Piece.EMPTY;
-	return pieces[col+row*width];
+	return pieces[col+row*rows];
     }
 
     private void tile(int col, int row, Tile tile)
     {
-	if (!(col < 0 || col >= width || row < 0 || row >= width))
-	    tiles[col+row*width] = tile;
+	if (!(col < 0 || col >= rows || row < 0 || row >= rows))
+	    tiles[col+row*rows] = tile;
     }
 
     public Tile tile(int col, int row)
     {
-	if (col < 0 || col >= width || row < 0 || row >= width)
+	if (col < 0 || col >= rows || row < 0 || row >= rows)
 	    return Tile.OUTER;
-	return tiles[col+row*width];
+	return tiles[col+row*rows];
     }
 
     public Piece turn()
@@ -206,7 +206,7 @@ public class Tafl
 
     public boolean onBoard(int x, int y)
     {
-	return !(x < 0 || y < 0 || x >= width || y > width);
+	return !(x < 0 || y < 0 || x >= rows || y > rows);
     }
 
     public boolean move(Move move)
@@ -314,8 +314,8 @@ public class Tafl
 	int red=0;
 	int king=0;
 	Piece p;
-	for (int i=0; i<width; i++) {
-	    for (int j=0; j<width; j++) {
+	for (int i=0; i<rows; i++) {
+	    for (int j=0; j<rows; j++) {
 		p = piece(i,j);
 		if (p == Piece.KING) {
 		    king++;
@@ -347,7 +347,7 @@ public class Tafl
 	sides += (owner(i,j-1,false) == Piece.WHITE ? 1 : 0);
 	sides += (owner(i,j+1,false) == Piece.WHITE ? 1 : 0);
 
-	if (i==0 || i == width-1 || j == 0 || j == width-1)
+	if (i==0 || i == rows-1 || j == 0 || j == rows-1)
 	    if (sides == 3)
 		return true;
 	if (sides == 4)
@@ -355,8 +355,8 @@ public class Tafl
 	return false;
     }
 
-    public int width()
+    public int rows()
     {
-	return width;
+	return rows;
     }
 }

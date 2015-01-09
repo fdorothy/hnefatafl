@@ -80,7 +80,7 @@ public class HnefataflGame extends ApplicationAdapter {
     void fillPieces()
     {
 	pieces = new Array <GDXPiece>();
-	rows = game.width();
+	rows = game.rows();
 	spacing = (double)bounds.width / rows;
 	for (int i=0; i<rows; i++) {
 	    for (int j=0; j<rows; j++) {
@@ -140,16 +140,15 @@ public class HnefataflGame extends ApplicationAdapter {
 	// draw lines on the board designating tiles
 	shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
 	shapeRenderer.setColor(0,0,0,1);
-	int width = game.width();
-	float spacing = bounds.width / width;
-	for (int i=0; i<width; i++) {
+	float spacing = bounds.width / rows;
+	for (int i=0; i<rows; i++) {
 	    shapeRenderer.line(i*spacing+bounds.x,bounds.y,i*spacing+bounds.x,bounds.y+bounds.height);
 	    shapeRenderer.line(bounds.x,i*spacing+bounds.y,bounds.x+bounds.width,i*spacing+bounds.y);
 	}
 
 	//  draw the cross over corner and center pieces
-	for (int i=0; i<width; i++) {
-	    for (int j=0; j<width; j++) {
+	for (int i=0; i<rows; i++) {
+	    for (int j=0; j<rows; j++) {
 		Tile t = game.tile(i,j);
 		if (t == Tile.CORNER || t == Tile.CENTER) {
 		    shapeRenderer.line(i*spacing+bounds.x, j*spacing+bounds.y, (i+1)*spacing+bounds.x, (j+1)*spacing+bounds.y);
@@ -162,7 +161,7 @@ public class HnefataflGame extends ApplicationAdapter {
 	if (selection != null) {
 	    shapeRenderer.setColor(0.0f, 0.0f, 1.0f, 1.0f);
 	    Rectangle b = selection.getBounds();
-	    shapeRenderer.line(cursor.x+dragOffset.x, cursor.y+dragOffset.y, dragStart.x+dragOffset.x, dragStart.y+dragOffset.y);
+	    shapeRenderer.line(cursor.x+dragOffset.x, cursor.y+dragOffset.y, dragStart.x, dragStart.y);
 	}
 	shapeRenderer.end();
     }
