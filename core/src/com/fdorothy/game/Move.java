@@ -32,9 +32,17 @@ public class Move
 
     public String toString()
     {
-	char srcx = (char)(_src_x + (int)'a');
-	char dstx = (char)(_dst_x + (int)'a');
-	return srcx + (char)_src_y + ":" + dstx + (char)_dst_y;
+	return "(" + _src_x + "," + _src_y + "," + _dst_x + "," + _dst_y + ")";
+    }
+
+    public static Move fromString(String s) throws Exception
+    {
+	String[] parts = s.substring(1,s.length()-1).split(",");
+	int srcx = Integer.parseInt(parts[0]);
+	int srcy = Integer.parseInt(parts[1]);
+	int dstx = Integer.parseInt(parts[2]);
+	int dsty = Integer.parseInt(parts[3]);
+	return new Move(srcx,srcy,dstx,dsty);
     }
 
     protected int _src_x;

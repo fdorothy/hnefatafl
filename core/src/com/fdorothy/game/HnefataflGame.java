@@ -6,6 +6,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -41,6 +42,7 @@ public class HnefataflGame extends ApplicationAdapter {
     private int rows;
     
     private Tafl game;
+    private History history;
 
     @Override
     public void create () {
@@ -73,6 +75,7 @@ public class HnefataflGame extends ApplicationAdapter {
     void reset()
     {
 	game = new Tafl();
+	history = new History();
 	fillPieces();
     }
 
@@ -234,13 +237,28 @@ public class HnefataflGame extends ApplicationAdapter {
 		move.srcY(selection.y);
 		move.dstX((int)((cursor.x-bounds.x+dragOffset.x)/spacing));
 		move.dstY((int)((cursor.y-bounds.y+dragOffset.y)/spacing));
-		game.move(move);
-		if (game.winner() != Piece.EMPTY)
-		    try {reset();} catch (Exception e) {}
+		if (game.isValid(move)) {
+		    game.move(move);
+		    history.addMove(move);
+		    move = new Move();
+		    if (game.winner() != Piece.EMPTY) {
+			writeHistory();
+			try {reset();} catch (Exception e) {}
+		    }
+		}
 		fillPieces();
 	    }
 	    selection=null;
 	}
+    }
+
+    public void writeHistory()
+    {
+	String moves = history.toString();
+	String board = game.toString();
+	FileHandle file = Gdx.files.local("tafl_log.txt");
+	file.writeString(moves,false);
+	file.writeString(board,true);
     }
 
     @Override

@@ -1,5 +1,8 @@
 package com.fdorothy.game;
 
+import java.util.Formatter;
+import java.util.Locale;
+
 public class Tafl
 {
     protected int rows;
@@ -353,6 +356,36 @@ public class Tafl
 	if (sides == 4)
 	    return true;
 	return false;
+    }
+
+    /**
+     *  Dumps the entire state of the board into a user-readable string.
+     */
+    public String toString()
+    {
+	StringBuilder sb = new StringBuilder();
+	int w = rows();
+	sb.append("rows = " + w + System.lineSeparator());
+	for (int j=w-1; j>=0; j--) {
+	    for (int i=0; i<w; i++) {
+		if (j != w)
+		    sb.append(String.format("%7s, ", tile(i,j).toString()));
+		else
+		    sb.append(String.format("%7s", tile(i,j).toString()));
+	    }
+	    sb.append(System.lineSeparator());
+	}
+	sb.append(System.lineSeparator());
+	for (int j=w-1; j>=0; j--) {
+	    for (int i=0; i<w; i++) {
+		if (j != w)
+		    sb.append(String.format("%7s, ", piece(i,j).toString()));
+		else
+		    sb.append(String.format("%7s", piece(i,j).toString()));
+	    }
+	    sb.append(System.lineSeparator());
+	}
+	return sb.toString();
     }
 
     public int rows()

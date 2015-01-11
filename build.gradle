@@ -89,10 +89,12 @@ project(":html") {
 project(":core") {
     apply plugin: "java"
 
+    sourceSets.test.java.srcDirs = ["test/"]
 
     dependencies {
         compile "com.badlogicgames.gdx:gdx:$gdxVersion"
         compile "com.badlogicgames.gdx:gdx-ai:$aiVersion"
+	testCompile "junit:junit:4.11"
     }
 }
 
