@@ -9,6 +9,7 @@ import com.fdorothy.game.Tile;
 import com.fdorothy.game.Piece;
 import com.fdorothy.game.Move;
 import com.fdorothy.game.History;
+import com.fdorothy.game.AI;
 
 import static org.junit.Assert.*;
 
@@ -146,5 +147,20 @@ public class TaflTest
 		}
 	    }
 	}
+    }
+
+    @Test
+    public void testAI()
+    {
+	// Tafl game = new Tafl();
+	// AI red = new AI(tafl, Piece.RED);
+	// AI white = new AI(tafl, Piece.WHITE);
+
+	// int turns = 0;
+	// while (game.winner() != Piece.EMPTY && turns < 1024) {
+	//     red.move();
+	//     white.move();
+	//     turns += 1;
+	// }
     }
 }

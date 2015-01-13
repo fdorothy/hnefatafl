@@ -43,6 +43,7 @@ public class HnefataflGame extends ApplicationAdapter {
     
     private Tafl game;
     private History history;
+    private AI ai;
 
     @Override
     public void create () {
@@ -75,6 +76,7 @@ public class HnefataflGame extends ApplicationAdapter {
     void reset()
     {
 	game = new Tafl();
+	ai = new AI(game, Piece.WHITE);
 	history = new History();
 	fillPieces();
     }
@@ -249,6 +251,11 @@ public class HnefataflGame extends ApplicationAdapter {
 		fillPieces();
 	    }
 	    selection=null;
+	}
+
+	if (ai.player() == game.turn()) {
+	    ai.move();
+	    fillPieces();
 	}
     }
 

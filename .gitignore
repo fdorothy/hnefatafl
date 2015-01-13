@@ -65,3 +65,9 @@ build/
 
 ## emacs
 *~
+
+## test files
+core/test_data/results/
+
+## log
+android/assets/tafl_log.txt

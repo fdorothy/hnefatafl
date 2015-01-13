@@ -1,8 +1,5 @@
 package com.fdorothy.game;
 
-import java.util.Formatter;
-import java.util.Locale;
-
 public class Tafl
 {
     protected int rows;
@@ -28,6 +25,15 @@ public class Tafl
 	tiles = new Tile[rows*rows];
 	for (int i=0; i<rows*rows; i++)
 	    tiles[i] = rhs.tiles[i];
+	turn = rhs.turn;
+	winner = rhs.winner;
+	gameOver = rhs.gameOver;
+    }
+
+    public void lazyRestore(Tafl rhs)
+    {
+	for (int i=0; i<rows*rows; i++)
+	    pieces[i] = rhs.pieces[i];
 	turn = rhs.turn;
 	winner = rhs.winner;
 	gameOver = rhs.gameOver;
@@ -241,6 +247,14 @@ public class Tafl
 	    turn = Piece.WHITE;
 
 	return true;
+    }
+
+    public Piece pieceOwner(int x, int y)
+    {
+	Piece p = piece(x,y);
+	if (p == Piece.KING)
+	    return Piece.RED;
+	return p;
     }
 
     public Piece owner(int x, int y, boolean isKingAsking)
