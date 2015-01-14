@@ -379,25 +379,25 @@ public class Tafl
     {
 	StringBuilder sb = new StringBuilder();
 	int w = rows();
-	sb.append("rows = " + w + System.lineSeparator());
+	sb.append("rows = " + w + "\n");
 	for (int j=w-1; j>=0; j--) {
 	    for (int i=0; i<w; i++) {
 		if (j != w)
-		    sb.append(String.format("%7s, ", tile(i,j).toString()));
+		    sb.append(Utility.padLeft(tile(i,j).toString(),7) + ", ");
 		else
-		    sb.append(String.format("%7s", tile(i,j).toString()));
+		    sb.append(Utility.padLeft(tile(i,j).toString(),7) + " ");
 	    }
-	    sb.append(System.lineSeparator());
+	    sb.append("\n");
 	}
-	sb.append(System.lineSeparator());
+	sb.append("\n");
 	for (int j=w-1; j>=0; j--) {
 	    for (int i=0; i<w; i++) {
 		if (j != w)
-		    sb.append(String.format("%7s, ", piece(i,j).toString()));
+		    sb.append(Utility.padLeft(piece(i,j).toString(),7) + ", ");
 		else
-		    sb.append(String.format("%7s", piece(i,j).toString()));
+		    sb.append(Utility.padLeft(piece(i,j).toString(),7) + " ");
 	    }
-	    sb.append(System.lineSeparator());
+	    sb.append("\n");
 	}
 	return sb.toString();
     }

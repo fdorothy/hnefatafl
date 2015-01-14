@@ -48,7 +48,7 @@ public class DistanceGraph
 	Queue <Integer> visit = new LinkedList <Integer>();
 	for (int i=0; i<_rows; i++)
 	    for (int j=0; j<_rows; j++)
-		if (owner(i,j) == side) {
+		if (_game.pieceOwner(i,j) == side) {
 		    _D[toIdx(i,j)] = 0;
 		    visit.add(toIdx(i,j));
 		} else
@@ -56,14 +56,6 @@ public class DistanceGraph
 	findDistance(visit);
     }
 
-    public Piece owner(int x, int y)
-    {
-	Piece p = _game.piece(x,y);
-	if (p == Piece.KING)
-	    return Piece.RED;
-	return p;
-    }
-	
     protected void visitSweep(int x, int y, int dir_x, int dir_y, int d, Queue <Integer> visit)
     {
 	x+=dir_x;
@@ -98,11 +90,11 @@ public class DistanceGraph
 	    for (int i=0; i<_rows; i++) {
 		int d = D(i,j);
 		if (i == _rows-1)
-		    sb.append(String.format("%4d", d));
+		    sb.append(" " + d);//String.format("%4d", d));
 		else
-		    sb.append(String.format("%4d,", d));
+		    sb.append(" " + d);//String.format("%4d,", d));
 	    }
-	    sb.append(System.lineSeparator());
+	    sb.append("\n");
 	}
 	return sb.toString();
     }

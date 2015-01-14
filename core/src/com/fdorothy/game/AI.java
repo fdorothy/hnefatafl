@@ -30,21 +30,17 @@ public class AI
 	GameScore gs = new GameScore(tmp);
 	GameScore best = new GameScore(tmp);
 	Move bestMove = null;
-	double bestScore=0.0;
+	double bestScore=0.0, tmpScore;
 	for (Move m : _moves) {
 	    tmp.move(m);
-	    if (bestMove == null) {
+	    gs.calculateScore();
+	    tmpScore = score(gs);
+	    if (m.dstX() == 0 && m.dstY() == 0)
+		System.out.println("move found that goes to 0,0, score = " + tmpScore);
+	    if (bestMove == null || tmpScore > bestScore) {
 		bestMove = m;
-		gs.calculateScore();
-		bestScore=score(gs);
-	    } else {
-		gs.calculateScore();
-		double tmpScore = score(gs);
-		if (tmpScore > bestScore) {
-		    bestMove = m;
-		    best = new GameScore(tmp);
-		    bestScore = tmpScore;
-		}
+		best = new GameScore(tmp);
+		bestScore=tmpScore;
 	    }
 	    tmp.lazyRestore(_game);
 	}
@@ -63,7 +59,31 @@ public class AI
 
     public double redScore(GameScore gs)
     {
-	return 0;
+	double score = 0.0;
+
+	score += gs.redPieces();
+	score -= gs.whitePieces();
+	score += gs.whiteThreats() * 0.5;
+	score -= gs.redThreats();
+
+	//  check if king is about to get into win position, we
+	// want to avoid this.
+	int kingDistance = gs.kingDistance();
+	if (kingDistance == 3)
+	    score += 2.0;
+	else if (kingDistance == 2)
+	    score += 3.0;
+	else if (kingDistance == 1)
+	    score += 20.0;
+	else if (kingDistance == 0) {
+	    score += 30.0;
+	    System.out.println("Found winning condition for red");
+	} else if (kingDistance >= DistanceGraph.inf)
+	    score -= 1.0;
+	else
+	    score -= kingDistance - 3;
+
+	return score;
     }
 
     public double whiteScore(GameScore gs)
@@ -84,6 +104,8 @@ public class AI
 	    score -= 15.0;
 	else if (kingDistance == 1)
 	    score -= 25.0;
+	else if (kingDistance == 0)
+	    score -= 50.0;
 	else if (kingDistance >= 999)
 	    score += 10.0;
 	else
@@ -118,8 +140,12 @@ public class AI
 	    if (_game.piece(x,y) != Piece.EMPTY)
 		return;
 	    Move m = new Move(srcX,srcY,x,y);
+	    if (x == 0 && y == 0)
+		System.out.println("move found that goes to 0,0");
 	    if (!_game.isValid(m))
 		return;
+	    if (x == 0 && y == 0)
+		System.out.println("move found that goes to 0,0?");
 	    _moves.add(m);
 	    x+=dirX;
 	    y+=dirY;

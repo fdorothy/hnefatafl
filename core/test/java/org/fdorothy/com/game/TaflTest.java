@@ -42,7 +42,7 @@ public class TaflTest
 
 		while (line != null) {
 		    sb.append(line);
-		    sb.append(System.lineSeparator());
+		    sb.append("\n");
 		    line = br.readLine();
 		}
 		return sb.toString();
@@ -106,7 +106,7 @@ public class TaflTest
     public History getGame(String filename)
     {
 	String str = readAll(filename);
-	String[] lines = str.split(System.lineSeparator());
+	String[] lines = str.split("\n");
 	History history = new History();
 	for (String line : lines) {
 	    try {
@@ -134,7 +134,7 @@ public class TaflTest
     @Test
     public void testGames()
     {
-	String[] games = readAll(DATA+"games.txt").split(System.lineSeparator());
+	String[] games = readAll(DATA+"games.txt").split("\n");
 	for (String game : games) {
 	    if (game.trim().length() != 0 && game.charAt(0) != '#') {
 		System.out.println("trying game " + game);

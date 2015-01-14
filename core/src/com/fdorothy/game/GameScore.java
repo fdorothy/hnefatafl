@@ -13,12 +13,11 @@ public class GameScore
 	DistanceGraph kingGraph = new DistanceGraph(_game);
 	int idx = findKing();
 	int rows = _game.rows();
-	if (idx > 0) {
+	if (idx >= 0) {
 	    int x = idx % rows;
 	    int y = idx / rows;
 	    kingGraph.seed(x,y);
 	    _kingAlive=true;
-	    _kingDistance = DistanceGraph.inf;
 	    _kingDistance = kingGraph.D(0,0);
 	    int d2 = kingGraph.D(rows-1,0);
 	    int d3 = kingGraph.D(rows-1,rows-1);
@@ -126,7 +125,7 @@ public class GameScore
     public String toString()
     {
 	StringBuilder sb = new StringBuilder();
-	String n = System.lineSeparator();
+	String n = "\n";
 	sb.append("king distance = " + _kingDistance + n);
 	sb.append("king alive = " + _kingAlive + n);
 	sb.append("whiteThreats = " + _whiteThreats + n);

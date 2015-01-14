@@ -2,6 +2,7 @@ package com.fdorothy.game;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Application.ApplicationType;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.math.Rectangle;
@@ -76,7 +77,7 @@ public class HnefataflGame extends ApplicationAdapter {
     void reset()
     {
 	game = new Tafl();
-	ai = new AI(game, Piece.WHITE);
+	ai = new AI(game, Piece.RED);
 	history = new History();
 	fillPieces();
     }
@@ -134,7 +135,11 @@ public class HnefataflGame extends ApplicationAdapter {
     {
 	// draw the board
 	batch.begin();
-	draw(res.wood, bounds, 0, 0, 11, 11);
+	if (Gdx.app.getType() != ApplicationType.Desktop) {
+	    draw(res.wood, bounds);
+	} else {
+	    draw(res.wood, bounds, 0, 0, 11, 11);
+	}
 	batch.end();
 
 	renderGridLines();
@@ -144,7 +149,7 @@ public class HnefataflGame extends ApplicationAdapter {
     {
 	// draw lines on the board designating tiles
 	shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-	shapeRenderer.setColor(0,0,0,1);
+	shapeRenderer.setColor(0.2f,0.2f,0.2f,1.0f);
 	float spacing = bounds.width / rows;
 	for (int i=0; i<rows; i++) {
 	    shapeRenderer.line(i*spacing+bounds.x,bounds.y,i*spacing+bounds.x,bounds.y+bounds.height);
@@ -221,8 +226,10 @@ public class HnefataflGame extends ApplicationAdapter {
 		    if (piece.owner() == game.turn() && piece.bounds.overlaps(area)) {
 			selection = piece;
 			selection.bounds.getCenter(dragStart);
-			dragOffset.x = dragStart.x - cursor.x;
-			dragOffset.y = dragStart.y - cursor.y;
+			if (Gdx.app.getType() == ApplicationType.Android) {
+			    dragOffset.x = dragStart.x - cursor.x;
+			    dragOffset.y = dragStart.y - cursor.y;
+			}
 		    }
 		}
 	    }
@@ -243,10 +250,6 @@ public class HnefataflGame extends ApplicationAdapter {
 		    game.move(move);
 		    history.addMove(move);
 		    move = new Move();
-		    if (game.winner() != Piece.EMPTY) {
-			writeHistory();
-			try {reset();} catch (Exception e) {}
-		    }
 		}
 		fillPieces();
 	    }
@@ -257,15 +260,19 @@ public class HnefataflGame extends ApplicationAdapter {
 	    ai.move();
 	    fillPieces();
 	}
+	if (game.winner() != Piece.EMPTY)
+	    reset();
     }
 
     public void writeHistory()
     {
-	String moves = history.toString();
-	String board = game.toString();
-	FileHandle file = Gdx.files.local("tafl_log.txt");
-	file.writeString(moves,false);
-	file.writeString(board,true);
+	if (Gdx.app.getType() == ApplicationType.Desktop) {
+	    String moves = history.toString();
+	    String board = game.toString();
+	    FileHandle file = Gdx.files.local("tafl_log.txt");
+	    file.writeString(moves,false);
+	    file.writeString(board,true);
+	}
     }
 
     @Override

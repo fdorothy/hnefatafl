@@ -25,7 +25,7 @@ public class History
     {
 	StringBuilder sb = new StringBuilder();
 	for (Move m : moves) {
-	    sb.append(m.toString() + System.lineSeparator());
+	    sb.append(m.toString() + "\n");
 	}
 	return sb.toString();
     }
@@ -33,7 +33,7 @@ public class History
     public static History fromString(String s) throws Exception
     {
 	History h = new History();
-	String[] parts = s.split(System.lineSeparator());
+	String[] parts = s.split("\n");
 	for (String p : parts) {
 	    h.addMove(Move.fromString(p));
 	}
