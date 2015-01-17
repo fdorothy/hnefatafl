@@ -259,6 +259,8 @@ public class Tafl
 
     public Piece owner(int x, int y, boolean isKingAsking)
     {
+	if (isKingAsking && x < 0 || y < 0 || x > rows || y > rows)
+	    return Piece.WHITE;
 	Piece p = piece(x,y);
 	if (p == Piece.KING)
 	    p = Piece.RED;
@@ -349,7 +351,7 @@ public class Tafl
 		    return Piece.EMPTY;
 	    }
 	}
-	if (red == 0)
+	if (red == 0 && king == 0)
 	    return Piece.WHITE;
 	if (white == 0)
 	    return Piece.RED;

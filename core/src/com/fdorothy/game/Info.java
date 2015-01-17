@@ -1,18 +1,21 @@
 package com.fdorothy.game;
 
-public class GameScore
+public class Info
 {
-    public GameScore(Tafl game)
+    public Info()
     {
-	_game = game;
-	calculateScore();
+    }
+
+    public Info(Tafl game)
+    {
+	calc(game);
     }
     
-    public void calculateScore()
+    public void calc(Tafl game)
     {
-	DistanceGraph kingGraph = new DistanceGraph(_game);
-	int idx = findKing();
-	int rows = _game.rows();
+	DistanceGraph kingGraph = new DistanceGraph(game);
+	int idx = findKing(game);
+	int rows = game.rows();
 	if (idx >= 0) {
 	    int x = idx % rows;
 	    int y = idx / rows;
@@ -33,8 +36,8 @@ public class GameScore
 	    _kingAlive=false;
 	}
 	//  calculate threats (imminent attacks)
-	_whiteThreats = threats(Piece.WHITE);
-	_redThreats = threats(Piece.RED);
+	_whiteThreats = threats(game,Piece.WHITE);
+	_redThreats = threats(game,Piece.RED);
 
 	//  calculate the number of pieces on the board
 	Piece p;
@@ -42,7 +45,7 @@ public class GameScore
 	_redPieces=0;
 	for (int i=0; i<rows; i++) {
 	    for (int j=0; j<rows; j++) {
-		p = _game.piece(i,j);
+		p = game.piece(i,j);
 		if (p == Piece.WHITE)
 		    _whitePieces++;
 		else if (p == Piece.RED)
@@ -51,41 +54,53 @@ public class GameScore
 	}
     }
 
-    public int threats(Piece player)
+    public int threats(Tafl game, Piece player)
     {
-	DistanceGraph graph = new DistanceGraph(_game);
+	DistanceGraph graph = new DistanceGraph(game);
 	graph.seedSide(player == Piece.WHITE ? Piece.RED : Piece.WHITE);
 
 	//  determine how many possible captures there will be
 	// in 1 turn with this arrangement.
-	int rows = _game.rows();
+	int rows = game.rows();
 	int threats=0;
 	for (int i=0; i<rows; i++)
 	    for (int j=0; j<rows; j++)
-		if (_game.pieceOwner(i,j) == player && threatened(i,j,graph))
+		if (game.pieceOwner(i,j) == player && threatened(game,i,j,graph))
 		    threats++;
 	return threats;
     }
 
-    public boolean threatened(int x, int y, DistanceGraph graph)
+    public boolean threatened(Tafl game, int x, int y, DistanceGraph graph)
     {
-	Piece piece = _game.piece(x,y);
-	Piece owner = _game.pieceOwner(x,y);
+	Piece piece = game.piece(x,y);
+	Piece owner = game.pieceOwner(x,y);
 	boolean isKing = (piece == Piece.KING);
 	Piece opponent = (owner == Piece.RED ? Piece.WHITE : Piece.RED);
-	if (_game.owner(x-1,y,isKing) == opponent && graph.D(x+1,y) == 1) return true;
-	if (_game.owner(x,y-1,isKing) == opponent && graph.D(x,y+1) == 1) return true;
-	if (_game.owner(x+1,y,isKing) == opponent && graph.D(x-1,y) == 1) return true;
-	if (_game.owner(x,y+1,isKing) == opponent && graph.D(x,y-1) == 1) return true;
+	if (isKing) {
+	    int threats = 0;
+	    if (game.owner(x-1,y,true) == opponent) threats++;
+	    if (game.owner(x,y-1,true) == opponent) threats++;
+	    if (game.owner(x+1,y,true) == opponent) threats++;
+	    if (game.owner(x,y+1,true) == opponent) threats++;
+	    if (graph.D(x+1,y) == 1 || graph.D(x,y+1) == 1 ||
+		graph.D(x-1,y) == 1 || graph.D(x,y-1) == 1)
+		threats++;
+	    if (threats >= 3) return true;
+	} else {
+	    if (game.owner(x-1,y,isKing) == opponent && graph.D(x+1,y) == 1) return true;
+	    if (game.owner(x,y-1,isKing) == opponent && graph.D(x,y+1) == 1) return true;
+	    if (game.owner(x+1,y,isKing) == opponent && graph.D(x-1,y) == 1) return true;
+	    if (game.owner(x,y+1,isKing) == opponent && graph.D(x,y-1) == 1) return true;
+	}
 	return false;
     }
 
-    protected int findKing()
+    protected int findKing(Tafl game)
     {
-	int rows=_game.rows();
+	int rows=game.rows();
 	for (int i=0; i<rows; i++) {
 	    for (int j=0; j<rows; j++) {
-		if (_game.piece(i,j) == Piece.KING)
+		if (game.piece(i,j) == Piece.KING)
 		    return i+j*rows;
 	    }
 	}
@@ -135,7 +150,6 @@ public class GameScore
 	return sb.toString();
     }
 
-    protected Tafl _game;
     protected int _whiteThreats;
     protected int _redThreats;
     protected int _kingDistance;
