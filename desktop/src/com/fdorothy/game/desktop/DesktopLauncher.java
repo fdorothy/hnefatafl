@@ -2,7 +2,7 @@ package com.fdorothy.game.desktop;
 
 import com.badlogic.gdx.backends.lwjgl.LwjglApplication;
 import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
-import com.fdorothy.game.HnefataflGame;
+import com.fdorothy.game.GdxView;
 
 public class DesktopLauncher {
 	public static void main (String[] arg) {
@@ -10,6 +10,6 @@ public class DesktopLauncher {
 		config.title = "Hnefatafl";
 		config.width = 480;
 		config.height = 800;
-		new LwjglApplication(new HnefataflGame(), config);
+		new LwjglApplication(new GdxView(), config);
 	}
 }

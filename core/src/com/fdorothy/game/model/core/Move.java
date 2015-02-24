@@ -45,6 +45,14 @@ public class Move
 	return new Move(srcx,srcy,dstx,dsty);
     }
 
+    public boolean equals(Move rhs)
+    {
+	return srcX() == rhs.srcX() &&
+	    srcY() == rhs.srcY() &&
+	    dstX() == rhs.dstX() &&
+	    dstY() == rhs.dstY();
+    }
+
     protected int _src_x;
     protected int _src_y;
     protected int _dst_x;

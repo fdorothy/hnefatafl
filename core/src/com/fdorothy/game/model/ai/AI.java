@@ -14,15 +14,15 @@ public class AI
 
     public class GameStack
     {
-	GameStack(Tafl game, int depth)
+	GameStack(Game game, int depth)
 	{
 	    _depth = depth;
 	    _cur = 0;
-	    _stack = new Tafl[depth];
+	    _stack = new Game[depth];
 	    _info = new Info[depth];
 	    _moves = new ArrayList<ArrayList <MoveNode>>();
 	    for (int i=0; i<depth; i++) {
-		_stack[i] = new Tafl(game);
+		_stack[i] = new Game(game);
 		_info[i] = new Info(_stack[i]);
 		_moves.add(new ArrayList<MoveNode>());
 	    }
@@ -50,12 +50,12 @@ public class AI
 	    return _moves.get(_cur);
 	}
 
-	public Tafl peek()
+	public Game peek()
 	{
 	    return _stack[_cur];
 	}
 
-	public void reset(Tafl game)
+	public void reset(Game game)
 	{
 	    for (int i=0; i<_depth; i++) {
 		_stack[i].lazyRestore(game);
@@ -66,7 +66,7 @@ public class AI
 
 	int _cur;
 	int _depth;
-	Tafl[] _stack;
+	Game[] _stack;
 	Info[] _info;
 	ArrayList <ArrayList <MoveNode>> _moves;
     }
@@ -82,18 +82,28 @@ public class AI
 	return _player;
     }
 
-    public void move(Tafl game)
+    public MoveNode move(Game game)
     {
-	_stack = new GameStack(game,5);
-	MoveNode n = think(2);
-	System.out.println("moving from " + n.move.srcX() + ", " + n.move.srcY() + " -> " +
-			   n.move.dstX() + ", " + n.move.dstY());
-	game.move(n.move);
+	_stack = new GameStack(game,10);
+	MoveNode n = think(2,1,false);
+	MoveNode n2= think(3,1,true);
+	if (n2 == null || n.score > n2.score) {
+	    game.move(n.move);
+	    return n;
+	} else {
+	    game.move(n2.move);
+	    return n2;
+	}
     }
 
-    public MoveNode think(int depth)
+    public MoveNode think(int depth, int opponentDepth, boolean kingOnly)
     {
-	findAllMoves();
+	_stack.moves().clear();
+	if (kingOnly)
+	    findKingMoves();
+	else
+	    findAllMoves();
+
 	//  find the best move without lookahead
 	if (depth <= 1)
 	    return findBestMove();
@@ -109,7 +119,7 @@ public class AI
 	    _stack.push();
 
 	    // make our move, return if we won
-	    Tafl game = _stack.peek();
+	    Game game = _stack.peek();
 	    game.move(m.move);
 	    if (game.winner() != Piece.EMPTY) {
 		m.score = score();
@@ -121,22 +131,24 @@ public class AI
 	    // using recursion. If they are going to win then don't
 	    // consider going down this path.
 	    _player = opp;
-	    MoveNode node = think(depth-1);
-	    game.move(node.move);
+	    MoveNode node = think(opponentDepth, 0, false);
 	    _player = player;
-	    if (game.winner() != Piece.EMPTY) {
-		if (best == null) {
-		    m.score = score();
-		    best = m;
-		}
-	    } else {
+	    if (node != null) {
+		game.move(node.move);
+		if (game.winner() != Piece.EMPTY) {
+		    if (best == null) {
+			m.score = score();
+			best = m;
+		    }
+		} else {
 
-		// now do some more recursive thinking to determine
-		// how we should respond to the opponent's move
-		node = think(depth-1);
-		if (node != null && (best == null || node.score > best.score)) {
-		    m.score = node.score;
-		    best = m;
+		    // now do some more recursive thinking to determine
+		    // how we should respond to the opponent's move
+		    node = think(depth-1,opponentDepth,kingOnly);
+		    if (node != null && (best == null || node.score > best.score)) {
+			m.score = node.score;
+			best = m;
+		    }
 		}
 	    }
 
@@ -181,6 +193,11 @@ public class AI
 	score -= info.whitePieces();
 	score += info.whiteThreats() * 0.5;
 	score -= info.redThreats();
+	score -= info.cornersBlocked() * 2.0;
+	if (info.kingInThirdRank())
+	    score += 1.0;
+	if (info.kingInCorner())
+	    score += 6.0;
 
 	//  check if king is about to get into win position, we
 	// want to avoid this.
@@ -234,7 +251,7 @@ public class AI
 
     public void findAllMoves()
     {
-	Tafl game = _stack.peek();
+	Game game = _stack.peek();
 	int rows = game.rows();
 	for (int i=0; i<rows; i++) {
 	    for (int j=0; j<rows; j++) {
@@ -248,9 +265,25 @@ public class AI
 	}
     }
 
+    public void findKingMoves()
+    {
+	Game game = _stack.peek();
+	int rows = game.rows();
+	for (int i=0; i<rows; i++) {
+	    for (int j=0; j<rows; j++) {
+		if (game.piece(i,j) == Piece.KING) {
+		    findMoves(i,j,-1,0);
+		    findMoves(i,j,1,0);
+		    findMoves(i,j,0,-1);
+		    findMoves(i,j,0,1);
+		}
+	    }
+	}
+    }
+
     protected void findMoves(int srcX, int srcY, int dirX, int dirY)
     {
-	Tafl game = _stack.peek();
+	Game game = _stack.peek();
 	ArrayList <MoveNode> moves = _stack.moves();
 	int rows = game.rows();
 	int x=srcX+dirX;
@@ -272,5 +305,4 @@ public class AI
 
     protected Piece _player;
     protected GameStack _stack;
-
 }

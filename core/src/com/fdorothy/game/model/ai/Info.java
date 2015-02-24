@@ -6,12 +6,12 @@ public class Info
     {
     }
 
-    public Info(Tafl game)
+    public Info(Game game)
     {
 	calc(game);
     }
     
-    public void calc(Tafl game)
+    public void calc(Game game)
     {
 	DistanceGraph kingGraph = new DistanceGraph(game);
 	int idx = findKing(game);
@@ -31,6 +31,10 @@ public class Info
 		_kingDistance = d3;
 	    if (_kingDistance > d4)
 		_kingDistance = d4;
+
+	    //  is the king in a strategic location?
+	    _kingInCorner = inCorner(rows,x,y);
+	    _kingInThirdRank = inThirdRank(rows,x,y);
 	} else {
 	    _kingDistance = DistanceGraph.inf;
 	    _kingAlive=false;
@@ -52,9 +56,18 @@ public class Info
 		    _redPieces++;
 	    }
 	}
+
+	//  seed red to see which corners are blocked
+	DistanceGraph redGraph = new DistanceGraph(game);
+	redGraph.seedSide(Piece.RED);
+	int cornersBlocked = 0;
+	if (redGraph.D(0,0) == DistanceGraph.inf) cornersBlocked++;
+	if (redGraph.D(rows-1,0) == DistanceGraph.inf) cornersBlocked++;
+	if (redGraph.D(rows-1,rows-1) == DistanceGraph.inf) cornersBlocked++;
+	if (redGraph.D(0,rows-1) == DistanceGraph.inf) cornersBlocked++;
     }
 
-    public int threats(Tafl game, Piece player)
+    public int threats(Game game, Piece player)
     {
 	DistanceGraph graph = new DistanceGraph(game);
 	graph.seedSide(player == Piece.WHITE ? Piece.RED : Piece.WHITE);
@@ -70,7 +83,7 @@ public class Info
 	return threats;
     }
 
-    public boolean threatened(Tafl game, int x, int y, DistanceGraph graph)
+    public boolean threatened(Game game, int x, int y, DistanceGraph graph)
     {
 	Piece piece = game.piece(x,y);
 	Piece owner = game.pieceOwner(x,y);
@@ -95,7 +108,24 @@ public class Info
 	return false;
     }
 
-    protected int findKing(Tafl game)
+    protected boolean inCorner(int rows, int x, int y)
+    {
+	if (x+y <= 2) return true;
+	if (rows-1-x+y <= 2) return true;
+	if (rows-1-x+rows-1-y <= 2) return true;
+	if (x+rows-1-y <= 2) return true;
+	return false;
+    }
+
+    protected boolean inThirdRank(int rows, int x, int y)
+    {
+	if (x == 2 || x == rows-3 ||
+	    y == 2 || y == rows-3)
+	    return true;
+	return false;
+    }
+
+    protected int findKing(Game game)
     {
 	int rows=game.rows();
 	for (int i=0; i<rows; i++) {
@@ -137,6 +167,21 @@ public class Info
 	return _kingAlive;
     }
 
+    public boolean kingInThirdRank()
+    {
+	return _kingInThirdRank;
+    }
+
+    public boolean kingInCorner()
+    {
+	return _kingInCorner;
+    }
+
+    public int cornersBlocked()
+    {
+	return _cornersBlocked;
+    }
+
     public String toString()
     {
 	StringBuilder sb = new StringBuilder();
@@ -147,6 +192,9 @@ public class Info
 	sb.append("redThreats = " + _redThreats + n);
 	sb.append("whitePieces = " + _whitePieces + n);
 	sb.append("redPieces = " + _redPieces + n);
+	sb.append("king in third rank = " + _kingInThirdRank + n);
+	sb.append("king in corner = " + _kingInCorner + n);
+	sb.append("corners blocked = " + _cornersBlocked + n);
 	return sb.toString();
     }
 
@@ -156,4 +204,7 @@ public class Info
     protected int _whitePieces;
     protected int _redPieces;
     protected boolean _kingAlive;
+    protected boolean _kingInThirdRank;
+    protected boolean _kingInCorner;
+    protected int _cornersBlocked;
 }

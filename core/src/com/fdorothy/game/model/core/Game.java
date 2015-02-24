@@ -1,6 +1,6 @@
 package com.fdorothy.game;
 
-public class Tafl
+public class Game
 {
     protected int rows;
     protected Piece pieces[];
@@ -11,12 +11,12 @@ public class Tafl
     protected int redScore;
     protected int whiteScore;
 
-    public Tafl()
+    public Game()
     {
 	reset();
     }
 
-    public Tafl(Tafl rhs)
+    public Game(Game rhs)
     {
 	rows = rhs.rows;
 	pieces = new Piece[rows*rows];
@@ -30,7 +30,7 @@ public class Tafl
 	gameOver = rhs.gameOver;
     }
 
-    public void lazyRestore(Tafl rhs)
+    public void lazyRestore(Game rhs)
     {
 	for (int i=0; i<rows*rows; i++)
 	    pieces[i] = rhs.pieces[i];
@@ -351,7 +351,7 @@ public class Tafl
 		    return Piece.EMPTY;
 	    }
 	}
-	if (red == 0 && king == 0)
+	if (king == 0)
 	    return Piece.WHITE;
 	if (white == 0)
 	    return Piece.RED;
@@ -361,14 +361,10 @@ public class Tafl
     protected boolean checkForKingCapture(int i, int j)
     {
 	int sides = 0;
-	sides += (owner(i-1,j,false) == Piece.WHITE ? 1 : 0);
-	sides += (owner(i+1,j,false) == Piece.WHITE ? 1 : 0);
-	sides += (owner(i,j-1,false) == Piece.WHITE ? 1 : 0);
-	sides += (owner(i,j+1,false) == Piece.WHITE ? 1 : 0);
-
-	if (i==0 || i == rows-1 || j == 0 || j == rows-1)
-	    if (sides == 3)
-		return true;
+	sides += (owner(i-1,j,true) == Piece.WHITE ? 1 : 0);
+	sides += (owner(i+1,j,true) == Piece.WHITE ? 1 : 0);
+	sides += (owner(i,j-1,true) == Piece.WHITE ? 1 : 0);
+	sides += (owner(i,j+1,true) == Piece.WHITE ? 1 : 0);
 	if (sides == 4)
 	    return true;
 	return false;

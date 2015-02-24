@@ -4,7 +4,7 @@ import java.io.*;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import com.fdorothy.game.Tafl;
+import com.fdorothy.game.Game;
 import com.fdorothy.game.Tile;
 import com.fdorothy.game.Piece;
 import com.fdorothy.game.Move;
@@ -74,14 +74,14 @@ public class TaflTest
     @Test
     public void testSetup()
     {
-	Tafl t = new Tafl();
+	Game t = new Game();
 	compareOutput("hnefataflSetup.txt", t.toString());
     }
 
     @Test
     public void testCapture()
     {
-	Tafl t = new Tafl();
+	Game t = new Game();
 	
 	// white moves 1,5 -> 1,1
 	t.move(new Move(1,5,1,1));
@@ -118,10 +118,10 @@ public class TaflTest
 	return history;
     }
 
-    public void testGame(String filename)
+    public Game testGame(String filename)
     {
 	History history = getGame(DATA+filename);
-	Tafl game = new Tafl();
+	Game game = new Game();
 	for (Move m : history.moves()) {
 	    System.out.println("moving: " + m.toString());
 	    game.move(m);
@@ -129,6 +129,7 @@ public class TaflTest
 	String str = history.toString();
 	str += game.toString();
 	compareOutput(filename,str);
+	return game;
     }
 
     @Test
@@ -152,15 +153,24 @@ public class TaflTest
     @Test
     public void testAI()
     {
-	// Tafl game = new Tafl();
-	// AI red = new AI(tafl, Piece.RED);
-	// AI white = new AI(tafl, Piece.WHITE);
+	History history = getGame(DATA+"ai_test1.txt");
+	Game game = new Game();
+	Game copy = new Game();
+	AI red = new AI(Piece.RED);
 
-	// int turns = 0;
-	// while (game.winner() != Piece.EMPTY && turns < 1024) {
-	//     red.move();
-	//     white.move();
-	//     turns += 1;
-	// }
+	// go through each move, see if the AI makes the same
+	// choices it did before.
+	for (Move m : history.moves()) {
+	    System.out.println(m.toString());
+	    if (game.turn() == Piece.WHITE) {
+		game.move(m);
+	    } else {
+		copy.lazyRestore(game);
+		AI.MoveNode aiMove = red.move(copy);
+		if (!m.equals(aiMove.move))
+		    System.out.println(aiMove.move.toString() + "*");
+		game.move(m);
+	    }
+	}
     }
 }

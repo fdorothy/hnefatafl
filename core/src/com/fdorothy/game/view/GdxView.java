@@ -2,6 +2,7 @@ package com.fdorothy.game;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.Application.ApplicationType;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
@@ -14,7 +15,9 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
-public class HnefataflGame extends ApplicationAdapter {
+import com.fdorothy.game.ViewModel;
+
+public class GdxView extends ApplicationAdapter {
 
     // GDX objects for rendering
     private SpriteBatch batch;
@@ -25,10 +28,10 @@ public class HnefataflGame extends ApplicationAdapter {
     private Resources res;
 
     //  stores the GDX piece representations, for picking and rendering
-    private Array <GDXPiece> pieces;
+    private Array <GdxPiece> pieces;
 
     //  selection and interaction objects
-    private GDXPiece selection;
+    private GdxPiece selection;
     private Vector2 dragStart;
     private Vector2 dragEnd;
     private Vector2 dragOffset;
@@ -42,10 +45,8 @@ public class HnefataflGame extends ApplicationAdapter {
     private double spacing;
     private int rows;
     
-    private Tafl game;
-    private History history;
-    private AI ai;
-    private AI ai2;
+    private ViewModel viewModel;
+    //private SettingsHandler handler;
 
     @Override
     public void create () {
@@ -73,26 +74,89 @@ public class HnefataflGame extends ApplicationAdapter {
 				   res.whiteTurn.getWidth(),
 				   res.whiteTurn.getHeight());
 	reset();
+	viewModel = new ViewModel();
+	loadPreferences();
+    }
+
+    /// sets the preferences based on the Gdx Preferences object
+    public void loadPreferences()
+    {
+	Preferences prefs = Gdx.app.getPreferences("TaflPreferences");
+	String gametypeStr = prefs.getString("gametype", "HNEFATAFL");
+	if (gametypeStr.equals("HNEFATAFL"))
+	    viewModel.setGame(GameTypes.HNEFATAFL);
+
+	// which side (white/red) are we?
+	String humanSideStr = prefs.getString("humanSide", "RED");
+	Piece humanSide = Piece.RED;
+	Piece opponentSide = Piece.WHITE;
+	if (humanSideStr.equals("WHITE")) {
+	    humanSide = Piece.WHITE;
+	    opponentSide = Piece.RED;
+	}
+
+	// who is our opponent (AI/Human/Remote)?
+	String opponentTypeStr = prefs.getString("opponentType", "AI");
+	PlayerType opponentType = PlayerType.AI;
+	if (opponentTypeStr.equals("HUMAN")) {
+	    opponentType = PlayerType.HUMAN;
+	} else if (opponentTypeStr.equals("REMOTE")) {
+	    opponentType = PlayerType.REMOTE;
+	}
+
+	// set the players based on the preferences we just loaded
+	Player[] players = new Player[2];
+
+	// player 1
+	players[0] = new Player();
+	players[0].side(Piece.RED);
+	if (humanSide == Piece.RED)
+	    players[0].playerType(PlayerType.HUMAN);
+	else
+	    players[0].playerType(opponentType);
+
+	// player 2
+	players[1] = new Player();
+	players[1].side(Piece.WHITE);
+	if (humanSide == Piece.WHITE)
+	    players[1].playerType(PlayerType.HUMAN);
+	else
+	    players[1].playerType(opponentType);
+
+	// fill in AI objects if we are battling an AI
+	if (opponentType == PlayerType.AI) {
+	    if (opponentSide == Piece.RED)
+		players[0].playerAI(new AI(Piece.RED));
+	    else
+		players[1].playerAI(new AI(Piece.WHITE));
+	}
+
+	viewModel.setPlayers(players);
     }
 
     void reset()
     {
-	game = new Tafl();
-	ai = new AI(Piece.RED);
-	ai2 = new AI(Piece.WHITE);
-	history = new History();
+	if (viewModel != null) {
+	    if (Gdx.app.getType() == ApplicationType.Desktop) {
+		String s = viewModel.getLog();
+		FileHandle file = Gdx.files.local("tafl_log.txt");
+		file.writeString(s,false);
+	    }
+	} else
+	    viewModel = new ViewModel();
+	loadPreferences();
 	fillPieces();
     }
 
-    //  fills in pieces from the Tafl board into the 'pieces' array
+    //  fills in pieces from the game into the 'pieces' array
     void fillPieces()
     {
-	pieces = new Array <GDXPiece>();
-	rows = game.rows();
+	pieces = new Array <GdxPiece>();
+	rows = viewModel.rows();
 	spacing = (double)bounds.width / rows;
 	for (int i=0; i<rows; i++) {
 	    for (int j=0; j<rows; j++) {
-		Piece p = game.piece(i,j);
+		Piece p = viewModel.piece(i,j);
 		if (p != Piece.EMPTY) {
 		    Texture tex;
 		    if (p == Piece.KING)
@@ -106,7 +170,7 @@ public class HnefataflGame extends ApplicationAdapter {
 		    float x = (int)(bounds.x + spacing*(i+0.5f) - tex.getWidth()/2.0f);
 		    float y = (int)(bounds.y + spacing*(j+0.5f) - tex.getHeight()/2.0f);
 		    Rectangle r = new Rectangle(x, y, tex.getWidth(), tex.getHeight());
-		    pieces.add(new GDXPiece(p, r, i, j));
+		    pieces.add(new GdxPiece(p, r, i, j));
 		}
 	    }
 	}
@@ -126,7 +190,7 @@ public class HnefataflGame extends ApplicationAdapter {
     {
 	// draw the red/white turn indicators
 	batch.begin();
-	if (game.turn() == Piece.RED)
+	if (viewModel.turn() == Piece.RED)
 	    draw(res.redTurn, redTitle);
 	else
 	    draw(res.whiteTurn, whiteTitle);
@@ -161,7 +225,7 @@ public class HnefataflGame extends ApplicationAdapter {
 	//  draw the cross over corner and center pieces
 	for (int i=0; i<rows; i++) {
 	    for (int j=0; j<rows; j++) {
-		Tile t = game.tile(i,j);
+		Tile t = viewModel.tile(i,j);
 		if (t == Tile.CORNER || t == Tile.CENTER) {
 		    shapeRenderer.line(i*spacing+bounds.x, j*spacing+bounds.y, (i+1)*spacing+bounds.x, (j+1)*spacing+bounds.y);
 		    shapeRenderer.line(i*spacing+bounds.x, (j+1)*spacing+bounds.y, (i+1)*spacing+bounds.x, j*spacing+bounds.y);
@@ -182,7 +246,7 @@ public class HnefataflGame extends ApplicationAdapter {
     {
 	// draw pieces
 	batch.begin();
-	for (GDXPiece piece: pieces) {
+	for (GdxPiece piece: pieces) {
 	    Rectangle b = piece.getBounds();
 	    Piece p = piece.getPiece();
 	    Texture tex;
@@ -212,6 +276,20 @@ public class HnefataflGame extends ApplicationAdapter {
 
     public void checkInput()
     {
+	Player p = viewModel.getCurrentPlayer();
+	if (p.playerType() == PlayerType.AI) {
+	    viewModel.aiMove();
+	    fillPieces();
+	}
+	else if (p.playerType() == PlayerType.HUMAN) {
+	    processLocalMove();
+	}
+	if (viewModel.winner() != Piece.EMPTY)
+	    reset();
+    }
+
+    public void processLocalMove()
+    {
 	// check for user input
 	if (Gdx.input.isTouched()) {
 
@@ -224,8 +302,8 @@ public class HnefataflGame extends ApplicationAdapter {
 		int s = (int)spacing;
 		Rectangle area = new Rectangle(cursor.x-s/2, cursor.y-s/2, s, s);
 		// try to find the piece we are touching
-		for (GDXPiece piece: pieces) {
-		    if (piece.owner() == game.turn() && piece.bounds.overlaps(area)) {
+		for (GdxPiece piece: pieces) {
+		    if (piece.owner() == viewModel.turn() && piece.bounds.overlaps(area)) {
 			selection = piece;
 			selection.bounds.getCenter(dragStart);
 			if (Gdx.app.getType() == ApplicationType.Android) {
@@ -248,32 +326,11 @@ public class HnefataflGame extends ApplicationAdapter {
 		move.srcY(selection.y);
 		move.dstX((int)((cursor.x-bounds.x+dragOffset.x)/spacing));
 		move.dstY((int)((cursor.y-bounds.y+dragOffset.y)/spacing));
-		if (game.isValid(move)) {
-		    game.move(move);
-		    history.addMove(move);
-		    move = new Move();
-		}
+		viewModel.humanMove(move);
+		move = new Move();
 		fillPieces();
 	    }
 	    selection=null;
-	}
-
-	if (ai.player() == game.turn()) {
-	    ai.move(game);
-	    fillPieces();
-	}
-	if (game.winner() != Piece.EMPTY)
-	    reset();
-    }
-
-    public void writeHistory()
-    {
-	if (Gdx.app.getType() == ApplicationType.Desktop) {
-	    String moves = history.toString();
-	    String board = game.toString();
-	    FileHandle file = Gdx.files.local("tafl_log.txt");
-	    file.writeString(moves,false);
-	    file.writeString(board,true);
 	}
     }
 

@@ -6,7 +6,7 @@ import java.util.LinkedList;
 
 public class DistanceGraph
 {
-    public DistanceGraph(Tafl game)
+    public DistanceGraph(Game game)
     {
 	_rows = game.rows();
 	_game = game;
@@ -117,5 +117,5 @@ public class DistanceGraph
     protected static final int inf = 999;
     protected int[] _D;
     protected int _rows;
-    protected Tafl _game;
+    protected Game _game;
 }

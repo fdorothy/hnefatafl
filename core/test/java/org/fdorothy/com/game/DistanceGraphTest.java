@@ -1,5 +1,5 @@
 import com.fdorothy.game.DistanceGraph;
-import com.fdorothy.game.Tafl;
+import com.fdorothy.game.Game;
 import com.fdorothy.game.Piece;
 
 import org.junit.Ignore;
@@ -11,7 +11,7 @@ public class DistanceGraphTest
     @Test
     public void testPieceMovement()
     {
-	Tafl game = new Tafl();
+	Game game = new Game();
 	DistanceGraph path = new DistanceGraph(game);
 	path.seed(1,5);
 	System.out.println(path.toString());
@@ -20,7 +20,7 @@ public class DistanceGraphTest
     @Test
     public void testTotalMovement()
     {
-	Tafl game = new Tafl();
+	Game game = new Game();
 	DistanceGraph path = new DistanceGraph(game);
 	path.seedSide(Piece.WHITE);
 	System.out.println("white can move:");

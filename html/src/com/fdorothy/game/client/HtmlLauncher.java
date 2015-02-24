@@ -3,7 +3,7 @@ package com.fdorothy.game.client;
 import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.backends.gwt.GwtApplication;
 import com.badlogic.gdx.backends.gwt.GwtApplicationConfiguration;
-import com.fdorothy.game.HnefataflGame;
+import com.fdorothy.game.GdxView;
 
 public class HtmlLauncher extends GwtApplication {
 
@@ -14,6 +14,6 @@ public class HtmlLauncher extends GwtApplication {
 
         @Override
         public ApplicationListener getApplicationListener () {
-                return new HnefataflGame();
+                return new GdxView();
         }
 }

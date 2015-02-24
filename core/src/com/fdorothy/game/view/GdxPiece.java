@@ -4,18 +4,18 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Rectangle;
 
-public class GDXPiece {
+public class GdxPiece {
     Piece piece;
     Rectangle bounds;
     int x, y;
 
-    GDXPiece()
+    GdxPiece()
     {
 	piece = Piece.EMPTY;
 	bounds = new Rectangle(0,0,32,32);
     }
 
-    GDXPiece(Piece p, Rectangle b, int x, int y)
+    GdxPiece(Piece p, Rectangle b, int x, int y)
     {
 	piece = p;
 	bounds = b;
