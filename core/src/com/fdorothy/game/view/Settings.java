@@ -137,7 +137,7 @@ public class Settings
 	table.add(gameLabel).left().pad(10);
 	table.add(gameTypeBox).colspan(2).pad(10);
 	table.row();
-	table.add(startButton).width(200).height(50).expandY().colspan(3).center().bottom().pad(10);
+	table.add(startButton).width(200).height(50).colspan(3).center().bottom().pad(15).space(100);
 
 	redTypeGroup = new ButtonGroup(redHumanButton, redAIButton);
 	redTypeGroup.setMinCheckCount(1);

@@ -67,6 +67,7 @@ public class GdxView extends ApplicationAdapter {
     private Settings settings;
     private long lastRender;
     private long duration;
+    private Rectangle tmpBounds;
 
     protected class Animation
     {
@@ -147,6 +148,7 @@ public class GdxView extends ApplicationAdapter {
 	moveAnimations = new Array<Animation>();
 	deathAnimations = new Array<Animation>();
 	animating = false;
+	tmpBounds = new Rectangle();
 	reset();
     }
 
@@ -216,11 +218,12 @@ public class GdxView extends ApplicationAdapter {
     {
 	// draw the board
 	batch.begin();
-	if (Gdx.app.getType() != ApplicationType.Desktop) {
-	    draw(res.wood, bounds);
-	} else {
-	    draw(res.wood, bounds, 0, 0, 11, 11);
-	}
+	// if (Gdx.app.getType() != ApplicationType.Desktop) {
+	//     draw(res.wood, bounds);
+	// } else {
+	//     int rows = viewModel.getGame().rows();
+	//     draw(res.wood, bounds, 0, 0, rows, rows);
+	// }
 	batch.end();
 
 	renderGridLines();
@@ -229,36 +232,43 @@ public class GdxView extends ApplicationAdapter {
     public void renderGridLines()
     {
 	// draw lines on the board designating tiles
-	shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+	//shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
 	shapeRenderer.setColor(0.2f,0.2f,0.2f,1.0f);
 	float spacing = bounds.width / rows;
-	for (int i=0; i<rows; i++) {
-	    shapeRenderer.line(i*spacing+bounds.x,bounds.y,i*spacing+bounds.x,bounds.y+bounds.height);
-	    shapeRenderer.line(bounds.x,i*spacing+bounds.y,bounds.x+bounds.width,i*spacing+bounds.y);
-	}
+	// for (int i=0; i<rows; i++) {
+	//     shapeRenderer.line(i*spacing+bounds.x,bounds.y,i*spacing+bounds.x,bounds.y+bounds.height);
+	//     shapeRenderer.line(bounds.x,i*spacing+bounds.y,bounds.x+bounds.width,i*spacing+bounds.y);
+	// }
 
 	//  draw the cross over corner and center pieces
+	batch.begin();
 	for (int i=0; i<rows; i++) {
 	    for (int j=0; j<rows; j++) {
 		Tile t = viewModel.tile(i,j);
-		if (t == Tile.CORNER || t == Tile.CENTER) {
-		    shapeRenderer.line(i*spacing+bounds.x, j*spacing+bounds.y, (i+1)*spacing+bounds.x, (j+1)*spacing+bounds.y);
-		    shapeRenderer.line(i*spacing+bounds.x, (j+1)*spacing+bounds.y, (i+1)*spacing+bounds.x, j*spacing+bounds.y);
-		}
+		tmpBounds.x = i*spacing+bounds.x;
+		tmpBounds.y = j*spacing+bounds.y;
+		tmpBounds.width = spacing;
+		tmpBounds.height = spacing;
+		draw(res.tile,tmpBounds);
+		if (t == Tile.CORNER || t == Tile.CENTER)
+		    draw(res.xtile,tmpBounds);
 	    }
 	}
+	batch.end();
+	shapeRenderer.end();
 
 	//  draw the line from the selection start to the selected piece
+	shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
 	if (selection != null) {
-	    shapeRenderer.setColor(0.0f, 0.0f, 1.0f, 1.0f);
+	    shapeRenderer.setColor(0.0f, 1.0f, 1.0f, 1.0f);
 	    Rectangle b = selection.getBounds();
 	    shapeRenderer.line(cursor.x+dragOffset.x, cursor.y+dragOffset.y, dragStart.x, dragStart.y);
 	}
+	shapeRenderer.end();
 
 	//  draw the last move locations
 	shapeRenderer.setColor(1.0f, 1.0f, 1.0f, 0.5f);
 
-	shapeRenderer.end();
     }
 
     public void renderPieces()
