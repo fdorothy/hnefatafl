@@ -72,9 +72,8 @@ public class AI
     }
 
 
-    public AI(Piece player)
+    public AI()
     {
-	_player = player;
     }
 
     public Piece player()
@@ -84,9 +83,10 @@ public class AI
 
     public MoveNode move(Game game)
     {
+	_player = game.turn();
 	_stack = new GameStack(game,10);
-	MoveNode n = think(2,1,false);
-	MoveNode n2= think(3,1,true);
+	MoveNode n = think(1,1,false);
+	MoveNode n2= think(2,1,true);
 	if (n2 == null || n.score > n2.score) {
 	    game.move(n.move);
 	    return n;

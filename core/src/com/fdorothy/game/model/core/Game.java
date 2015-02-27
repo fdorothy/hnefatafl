@@ -10,9 +10,11 @@ public class Game
     protected boolean gameOver;
     protected int redScore;
     protected int whiteScore;
+    protected GameTypes gameType;
 
     public Game()
     {
+	gameType = GameTypes.HNEFATAFL;
 	reset();
     }
 
@@ -45,10 +47,35 @@ public class Game
 	redScore=0;
 	whiteScore=0;
 	gameOver=false;
-	set_hnefatafl();
+	setGameType(this.gameType);
     }
 
-    private void set_hnefatafl()
+    public void setGameType(GameTypes gameType)
+    {
+	this.gameType = gameType;
+	switch (gameType) {
+	default:
+	case HNEFATAFL:
+	    setHnefatafl();
+	    break;
+	case BRANDUBH:
+	    setBrandubh();
+	    break;
+	case ARD_RI:
+	    setArdRi();
+	    break;
+	case TABLUT:
+	    setTablut();
+	    break;
+	}
+    }
+
+    public GameTypes getGameType()
+    {
+	return this.gameType;
+    }
+
+    private void setHnefatafl()
     {
 	rows = 11;
 	pieces = new Piece[rows*rows];
@@ -118,6 +145,174 @@ public class Game
 	piece( 5, 7, Piece.RED);
 
 	turn = Piece.WHITE;
+    }
+
+    private void setBrandubh()
+    {
+	rows = 7;
+	pieces = new Piece[rows*rows];
+	tiles = new Tile[rows*rows];
+
+	//  set up tiles
+	for (int i=0; i<rows; i++)
+	    for (int j=0; j<rows; j++)
+		if ((i==0 && (j==0 || j==rows-1)) ||
+		    (i==rows-1 && (j==0 || j==rows-1)))
+		    tile(i,j,Tile.CORNER);
+		else if (i == 3 && j == 3)
+		    tile(i,j,Tile.CENTER);
+		else
+		    tile(i,j,Tile.BLANK);
+
+	//  clear the board
+	for (int i=0; i<rows; i++)
+	    for (int j=0; j<rows; j++)
+		piece(i,j,Piece.EMPTY);
+
+	//  white pieces in center
+	piece( 3, 3, Piece.KING);
+	piece( 4, 3, Piece.RED);
+	piece( 2, 3, Piece.RED);
+	piece( 3, 4, Piece.RED);
+	piece( 3, 2, Piece.RED);
+
+	//  left-side of board
+	piece( 0, 3, Piece.WHITE);
+	piece( 1, 3, Piece.WHITE);
+
+	//  right-side of board
+	piece( 6, 3, Piece.WHITE);
+	piece( 5, 3, Piece.WHITE);
+
+	//  bottom of board
+	piece( 3, 0, Piece.WHITE);
+	piece( 3, 1, Piece.WHITE);
+
+	//  top of board
+	piece( 3, 6, Piece.WHITE);
+	piece( 3, 5, Piece.WHITE);
+
+	turn = Piece.WHITE;
+    }
+
+    private void setArdRi()
+    {
+	rows = 7;
+	pieces = new Piece[rows*rows];
+	tiles = new Tile[rows*rows];
+
+	//  set up tiles
+	for (int i=0; i<rows; i++)
+	    for (int j=0; j<rows; j++)
+		if ((i==0 && (j==0 || j==rows-1)) ||
+		    (i==rows-1 && (j==0 || j==rows-1)))
+		    tile(i,j,Tile.CORNER);
+		else if (i == 3 && j == 3)
+		    tile(i,j,Tile.CENTER);
+		else
+		    tile(i,j,Tile.BLANK);
+
+	//  clear the board
+	for (int i=0; i<rows; i++)
+	    for (int j=0; j<rows; j++)
+		piece(i,j,Piece.EMPTY);
+
+	//  white pieces in center
+	piece( 2, 2, Piece.RED);
+	piece( 2, 3, Piece.RED);
+	piece( 2, 4, Piece.RED);
+	piece( 3, 2, Piece.RED);
+	piece( 3, 3, Piece.KING);
+	piece( 3, 4, Piece.RED);
+	piece( 4, 2, Piece.RED);
+	piece( 4, 3, Piece.RED);
+	piece( 4, 4, Piece.RED);
+
+	//  left-side of board
+	piece( 0, 2, Piece.WHITE);
+	piece( 0, 3, Piece.WHITE);
+	piece( 1, 3, Piece.WHITE);
+	piece( 0, 4, Piece.WHITE);
+
+	//  right-side of board
+	piece( 6, 2, Piece.WHITE);
+	piece( 6, 3, Piece.WHITE);
+	piece( 5, 3, Piece.WHITE);
+	piece( 6, 4, Piece.WHITE);
+
+	//  bottom of board
+	piece( 2, 0, Piece.WHITE);
+	piece( 3, 0, Piece.WHITE);
+	piece( 3, 1, Piece.WHITE);
+	piece( 4, 0, Piece.WHITE);
+
+	//  top of board
+	piece( 2, 6, Piece.WHITE);
+	piece( 3, 6, Piece.WHITE);
+	piece( 3, 5, Piece.WHITE);
+	piece( 4, 6, Piece.WHITE);
+
+	turn = Piece.RED;
+    }
+
+    private void setTablut()
+    {
+	rows = 9;
+	pieces = new Piece[rows*rows];
+	tiles = new Tile[rows*rows];
+
+	//  set up tiles
+	for (int i=0; i<rows; i++)
+	    for (int j=0; j<rows; j++)
+		if ((i==0 && (j==0 || j==rows-1)) ||
+		    (i==rows-1 && (j==0 || j==rows-1)))
+		    tile(i,j,Tile.CORNER);
+		else if (i == 4 && j == 4)
+		    tile(i,j,Tile.CENTER);
+		else
+		    tile(i,j,Tile.BLANK);
+
+	//  clear the board
+	for (int i=0; i<rows; i++)
+	    for (int j=0; j<rows; j++)
+		piece(i,j,Piece.EMPTY);
+
+	//  left side of board
+	piece( 0, 3, Piece.WHITE);
+	piece( 0, 4, Piece.WHITE);
+	piece( 0, 5, Piece.WHITE);
+	piece( 1, 4, Piece.WHITE);
+
+	//  right side of board
+	piece( 8, 3, Piece.WHITE);
+	piece( 8, 4, Piece.WHITE);
+	piece( 8, 5, Piece.WHITE);
+	piece( 7, 4, Piece.WHITE);
+
+	//  bottom of board
+	piece( 3, 0, Piece.WHITE);
+	piece( 4, 0, Piece.WHITE);
+	piece( 5, 0, Piece.WHITE);
+	piece( 4, 1, Piece.WHITE);
+
+	//  top of board
+	piece( 3, 8, Piece.WHITE);
+	piece( 4, 8, Piece.WHITE);
+	piece( 5, 8, Piece.WHITE);
+	piece( 4, 7, Piece.WHITE);
+
+	//  center of board
+	piece( 2, 4, Piece.RED);
+	piece( 3, 4, Piece.RED);
+	piece( 4, 4, Piece.KING);
+	piece( 5, 4, Piece.RED);
+	piece( 6, 4, Piece.RED);
+	piece( 4, 3, Piece.RED);
+	piece( 4, 2, Piece.RED);
+	piece( 4, 5, Piece.RED);
+	piece( 4, 6, Piece.RED);
+
+	turn = Piece.RED;
     }
 
     private void piece(int col, int row, Piece piece)

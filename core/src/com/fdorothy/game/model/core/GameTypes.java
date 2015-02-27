@@ -2,5 +2,8 @@ package com.fdorothy.game;
 
 public enum GameTypes
 {
-    HNEFATAFL
+    HNEFATAFL,
+    BRANDUBH,
+    ARD_RI,
+    TABLUT
 }

@@ -7,6 +7,10 @@ public class ViewModel
 	game = new Game();
 	history = new History();
 	players = new Player[2];
+	players[0] = new Player(Piece.RED, PlayerType.HUMAN);
+	players[1] = new Player(Piece.WHITE, PlayerType.AI);
+	for (int i=0; i<2; i++)
+	    players[i].playerAI(new AI());
     }
 
     public void setGame(Game g)
@@ -17,6 +21,7 @@ public class ViewModel
     public void setGame(GameTypes gameType)
     {
 	game = new Game();
+	game.setGameType(gameType);
     }
 
     public Game getGame()
@@ -42,6 +47,16 @@ public class ViewModel
     public Player getPlayer(int i)
     {
 	return players[i];
+    }
+
+    public Player getRedPlayer()
+    {
+	return players[0];
+    }
+
+    public Player getWhitePlayer()
+    {
+	return players[1];
     }
 
     public void setPlayers(Player[] p)
@@ -104,11 +119,12 @@ public class ViewModel
 	updateCurrentPlayer();
     }
 
-    public void aiMove()
+    public Move aiMove()
     {
 	AI.MoveNode node = currentPlayer.playerAI().move(game);
 	history.addMove(node.move);
 	updateCurrentPlayer();
+	return node.move;
     }
 
     protected void updateCurrentPlayer()

@@ -14,6 +14,15 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.TimeUtils;
 
 import com.fdorothy.game.ViewModel;
 
@@ -23,6 +32,11 @@ public class GdxView extends ApplicationAdapter {
     private SpriteBatch batch;
     private ShapeRenderer shapeRenderer;
     private OrthographicCamera cam;
+
+    Skin skin;
+    Stage stage;
+    Table table;
+    TextButton forfeit;
 
     // GDX objects for images, sound, etc. for the game
     private Resources res;
@@ -37,6 +51,10 @@ public class GdxView extends ApplicationAdapter {
     private Vector2 dragOffset;
     private Vector3 cursor;
 
+    // last-move start/stop;
+    private Vector2 lastMoveStart;
+    private Vector2 lastMoveStop;
+
     private Rectangle bounds;
     private Rectangle whiteTitle;
     private Rectangle redTitle;
@@ -46,10 +64,61 @@ public class GdxView extends ApplicationAdapter {
     private int rows;
     
     private ViewModel viewModel;
-    //private SettingsHandler handler;
+    private Settings settings;
+    private long lastRender;
+    private long duration;
+
+    protected class Animation
+    {
+	GdxPiece piece;
+	void act() {}
+	float animT;
+    }
+
+    protected class DeathAnimation extends Animation
+    {
+	@Override
+	public void act()
+	{
+	    piece.setAlpha(1.0f - animT);
+	}
+    }
+
+    protected class MoveAnimation extends Animation
+    {
+	Vector2 start;
+	Vector2 stop;
+
+	@Override
+	public void act()
+	{
+	    float t=animT;
+	    piece.bounds.setCenter((int)(start.x*(1.0f-t) + stop.x*t),
+				   (int)(start.y*(1.0f-t) + stop.y*t));
+	}
+    }
+    
+    Array <Animation> moveAnimations;
+    Array <Animation> deathAnimations;
+    boolean animating;
 
     @Override
     public void create () {
+	stage = new Stage(new FitViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight()));
+
+	skin = new Skin(Gdx.files.internal("uiskin.json"));
+	table = new Table();
+	forfeit = new TextButton("forfeit",skin);
+	forfeit.addListener(new ClickListener()
+	    {
+		public void clicked(InputEvent event, float x, float y)
+		{
+		    reset();
+		}
+	    });
+	table.setFillParent(true);
+	table.add(forfeit).expand().width(100).height(50).bottom();
+	stage.addActor(table);
 	batch = new SpriteBatch();
 	shapeRenderer = new ShapeRenderer();
 	res = new Resources();
@@ -57,6 +126,8 @@ public class GdxView extends ApplicationAdapter {
 	dragStart = new Vector2();
 	dragEnd = new Vector2();
 	dragOffset = new Vector2();
+	lastMoveStart = new Vector2();
+	lastMoveStop = new Vector2();
 	move = new Move();
 	screen = new Rectangle(0,0,Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 	cam = new OrthographicCamera();
@@ -73,65 +144,10 @@ public class GdxView extends ApplicationAdapter {
 				   screen.height-res.whiteTurn.getHeight(),
 				   res.whiteTurn.getWidth(),
 				   res.whiteTurn.getHeight());
+	moveAnimations = new Array<Animation>();
+	deathAnimations = new Array<Animation>();
+	animating = false;
 	reset();
-	viewModel = new ViewModel();
-	loadPreferences();
-    }
-
-    /// sets the preferences based on the Gdx Preferences object
-    public void loadPreferences()
-    {
-	Preferences prefs = Gdx.app.getPreferences("TaflPreferences");
-	String gametypeStr = prefs.getString("gametype", "HNEFATAFL");
-	if (gametypeStr.equals("HNEFATAFL"))
-	    viewModel.setGame(GameTypes.HNEFATAFL);
-
-	// which side (white/red) are we?
-	String humanSideStr = prefs.getString("humanSide", "RED");
-	Piece humanSide = Piece.RED;
-	Piece opponentSide = Piece.WHITE;
-	if (humanSideStr.equals("WHITE")) {
-	    humanSide = Piece.WHITE;
-	    opponentSide = Piece.RED;
-	}
-
-	// who is our opponent (AI/Human/Remote)?
-	String opponentTypeStr = prefs.getString("opponentType", "AI");
-	PlayerType opponentType = PlayerType.AI;
-	if (opponentTypeStr.equals("HUMAN")) {
-	    opponentType = PlayerType.HUMAN;
-	} else if (opponentTypeStr.equals("REMOTE")) {
-	    opponentType = PlayerType.REMOTE;
-	}
-
-	// set the players based on the preferences we just loaded
-	Player[] players = new Player[2];
-
-	// player 1
-	players[0] = new Player();
-	players[0].side(Piece.RED);
-	if (humanSide == Piece.RED)
-	    players[0].playerType(PlayerType.HUMAN);
-	else
-	    players[0].playerType(opponentType);
-
-	// player 2
-	players[1] = new Player();
-	players[1].side(Piece.WHITE);
-	if (humanSide == Piece.WHITE)
-	    players[1].playerType(PlayerType.HUMAN);
-	else
-	    players[1].playerType(opponentType);
-
-	// fill in AI objects if we are battling an AI
-	if (opponentType == PlayerType.AI) {
-	    if (opponentSide == Piece.RED)
-		players[0].playerAI(new AI(Piece.RED));
-	    else
-		players[1].playerAI(new AI(Piece.WHITE));
-	}
-
-	viewModel.setPlayers(players);
     }
 
     void reset()
@@ -142,10 +158,9 @@ public class GdxView extends ApplicationAdapter {
 		FileHandle file = Gdx.files.local("tafl_log.txt");
 		file.writeString(s,false);
 	    }
-	} else
-	    viewModel = new ViewModel();
-	loadPreferences();
-	fillPieces();
+	}
+	viewModel = new ViewModel();
+	settings = new Settings(res,viewModel);
     }
 
     //  fills in pieces from the game into the 'pieces' array
@@ -239,6 +254,10 @@ public class GdxView extends ApplicationAdapter {
 	    Rectangle b = selection.getBounds();
 	    shapeRenderer.line(cursor.x+dragOffset.x, cursor.y+dragOffset.y, dragStart.x, dragStart.y);
 	}
+
+	//  draw the last move locations
+	shapeRenderer.setColor(1.0f, 1.0f, 1.0f, 0.5f);
+
 	shapeRenderer.end();
     }
 
@@ -246,46 +265,153 @@ public class GdxView extends ApplicationAdapter {
     {
 	// draw pieces
 	batch.begin();
-	for (GdxPiece piece: pieces) {
-	    Rectangle b = piece.getBounds();
-	    Piece p = piece.getPiece();
-	    Texture tex;
-	    switch (p) {
-	    case WHITE: tex=res.white; break;
-	    case RED: tex=res.red; break;
-	    case KING: tex=res.king; break;
-	    default: tex=res.white; break;
-	    }
-	    draw(tex,b);
-	}
+	for (GdxPiece piece: pieces)
+	    renderPiece(piece);
+	for (Animation anim: moveAnimations)
+	    renderPiece(anim.piece);
+	for (Animation anim: deathAnimations)
+	    renderPiece(anim.piece);
 	batch.end();
+    }
+
+    public void renderPiece(GdxPiece piece)
+    {
+	Rectangle b = piece.getBounds();
+	Piece p = piece.getPiece();
+	Texture tex;
+	switch (p) {
+	case WHITE: tex=res.white; break;
+	case RED: tex=res.red; break;
+	case KING: tex=res.king; break;
+	default: tex=res.white; break;
+	}
+	batch.setColor(1.0f,1.0f,1.0f,piece.alpha);
+	draw(tex,b);
+	batch.setColor(1.0f,1.0f,1.0f,1.0f);
     }
 
     @Override
     public void render () {
-	Gdx.gl.glClearColor(0, 0, 0, 1);
-	Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-	cam.update();
-	batch.setProjectionMatrix(cam.combined);
-	shapeRenderer.setProjectionMatrix(cam.combined);
-	renderUI();
-	renderBoard();
-	renderPieces();
-	checkInput();
+	if (lastRender != 0)
+	    duration = TimeUtils.timeSinceMillis(lastRender);
+	lastRender = TimeUtils.millis();
+	if (settings != null) {
+	    settings.render();
+	    if (settings.startGame()) {
+		settings = null;
+		Gdx.input.setInputProcessor(stage);
+		fillPieces();
+	    }
+	} else {
+	    Gdx.gl.glClearColor(0, 0, 0, 1);
+	    Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+	    stage.act(Gdx.graphics.getDeltaTime());
+	    stage.draw();
+	    cam.update();
+	    batch.setProjectionMatrix(cam.combined);
+	    shapeRenderer.setProjectionMatrix(cam.combined);
+	    renderUI();
+	    renderBoard();
+	    renderPieces();
+	    if (!animating)
+		checkInput();
+	    renderAnimations();
+	}
+    }
+
+    public void renderAnimations()
+    {
+	if (moveAnimations.size > 0)
+	    renderAnimations(moveAnimations);
+	else if (deathAnimations.size > 0)
+	    renderAnimations(deathAnimations);
+	else if (animating) {
+	    animating = false;
+	    fillPieces();
+	    if (viewModel.winner() != Piece.EMPTY) {
+		reset();
+	    }
+	}
+    }
+
+    public void renderAnimations(Array<Animation> animations)
+    {
+	// render the anim
+	for (Animation anim: animations) {
+	    anim.act();
+	}
+	// update the animation time, remove old animations
+	float inc = duration / 1000.0f;
+	//float inc = .01f;
+	for (int i=0; i<animations.size; i++) {
+	    Animation anim = animations.get(i);
+	    anim.animT += inc;
+	    if (anim.animT > 1.0f)
+		animations.removeIndex(i--);
+	}
+    }
+
+    public void toScreen(int col, int row, Vector2 out)
+    {
+	int rows = viewModel.getGame().rows();
+	out.x = (bounds.width / rows) * (0.5f + col) + bounds.x;
+	out.y = (bounds.height / rows) * (0.5f + row) + bounds.y;
     }
 
     public void checkInput()
     {
 	Player p = viewModel.getCurrentPlayer();
 	if (p.playerType() == PlayerType.AI) {
-	    viewModel.aiMove();
+	    Move m = viewModel.aiMove();
+	    toScreen(m.srcX(), m.srcY(), lastMoveStart);
+	    toScreen(m.dstX(), m.dstY(), lastMoveStop);
+	    MoveAnimation ma = new MoveAnimation();
+	    ma.start = lastMoveStart;
+	    ma.stop = lastMoveStop;
+	    ma.piece = getGdxPiece(m.srcX(), m.srcY());
+	    moveAnimations.add(ma);
+	    animating = true;
+
+	    // find the dead
+	    Array<GdxPiece> tmp = pieces;
 	    fillPieces();
+	    for (GdxPiece piece:deadPieces(tmp,pieces,ma.piece)) {
+		DeathAnimation da = new DeathAnimation();
+		da.animT = 0.0f;
+		da.piece = piece;
+		deathAnimations.add(da);
+	    }
+	    pieces = tmp;
 	}
 	else if (p.playerType() == PlayerType.HUMAN) {
 	    processLocalMove();
 	}
-	if (viewModel.winner() != Piece.EMPTY)
-	    reset();
+    }
+
+    public Array<GdxPiece> deadPieces(Array <GdxPiece> oldPieces, Array <GdxPiece> newPieces, GdxPiece moved)
+    {
+	Array<GdxPiece> dead = new Array<GdxPiece>();
+	for (GdxPiece oldPiece:oldPieces) {
+	    if (!oldPiece.equals(moved)) {
+		boolean found = false;
+		for (GdxPiece newPiece:newPieces) {
+		    if (newPiece.equals(oldPiece)) {
+			found=true;
+		    }
+		}
+		if (!found)
+		    dead.add(oldPiece);
+	    }
+	}
+	return dead;
+    }
+
+    public GdxPiece getGdxPiece(int x, int y)
+    {
+	for (GdxPiece piece: pieces)
+	    if (piece.x == x && piece.y == y)
+		return piece;
+	return null;
     }
 
     public void processLocalMove()
@@ -326,9 +452,30 @@ public class GdxView extends ApplicationAdapter {
 		move.srcY(selection.y);
 		move.dstX((int)((cursor.x-bounds.x+dragOffset.x)/spacing));
 		move.dstY((int)((cursor.y-bounds.y+dragOffset.y)/spacing));
+		toScreen(move.srcX(), move.srcY(), lastMoveStart);
+		toScreen(move.dstX(), move.dstY(), lastMoveStop);
+
+		MoveAnimation ma = new MoveAnimation();
+		ma.piece = selection;
+
 		viewModel.humanMove(move);
 		move = new Move();
+
+		ma.start = lastMoveStart;
+		ma.stop = lastMoveStop;
+		moveAnimations.add(ma);
+		animating = true;
+
+		// find the dead
+		Array<GdxPiece> tmp = pieces;
 		fillPieces();
+		for (GdxPiece piece:deadPieces(tmp,pieces,ma.piece)) {
+		    DeathAnimation da = new DeathAnimation();
+		    da.animT = 0.0f;
+		    da.piece = piece;
+		    deathAnimations.add(da);
+		}
+		pieces = tmp;
 	    }
 	    selection=null;
 	}
