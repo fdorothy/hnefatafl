@@ -12,11 +12,15 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.utils.SpriteDrawable;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
@@ -37,7 +41,7 @@ public class GdxView extends ApplicationAdapter {
     Skin skin;
     Stage stage;
     Table table;
-    TextButton forfeit;
+    ImageButton forfeit;
 
     // GDX objects for images, sound, etc. for the game
     private Resources res;
@@ -70,6 +74,11 @@ public class GdxView extends ApplicationAdapter {
     private long lastRender;
     private long duration;
     private Rectangle tmpBounds;
+    private Color boardColor;
+    private Color lineColor;
+    private Color backgroundColor;
+    private Color selectionColor;
+
 
     protected class Animation
     {
@@ -111,7 +120,8 @@ public class GdxView extends ApplicationAdapter {
 
 	skin = new Skin(Gdx.files.internal("uiskin.json"));
 	table = new Table();
-	forfeit = new TextButton("forfeit",skin);
+	forfeit = new ImageButton(new SpriteDrawable(new Sprite(new Texture(Gdx.files.internal("forfeit.png")))),
+				  new SpriteDrawable(new Sprite(new Texture(Gdx.files.internal("forfeit_down.png")))));
 	forfeit.addListener(new ClickListener()
 	    {
 		public void clicked(InputEvent event, float x, float y)
@@ -152,7 +162,16 @@ public class GdxView extends ApplicationAdapter {
 	deathAnimations = new Array<Animation>();
 	animating = false;
 	tmpBounds = new Rectangle();
+	boardColor = fromARGB(255,148,103,67);
+	lineColor = fromARGB(255,95,55,21);
+	backgroundColor = fromARGB(255,110,86,65);
+	selectionColor = fromARGB(255,127,189,111);
 	reset();
+    }
+
+    Color fromARGB(int a, int r, int g, int b)
+    {
+	return new Color(r/255.0f,g/255.0f,b/255.0f,a/255.0f);
     }
 
     void reset()
@@ -217,52 +236,62 @@ public class GdxView extends ApplicationAdapter {
 	batch.end();
     }
 
-    public void renderBoard()
+    public void tileBounds(int x, int y, Rectangle b)
     {
-	// draw the board
-	batch.begin();
-	// if (Gdx.app.getType() != ApplicationType.Desktop) {
-	//     draw(res.wood, bounds);
-	// } else {
-	//     int rows = viewModel.getGame().rows();
-	//     draw(res.wood, bounds, 0, 0, rows, rows);
-	// }
-	batch.end();
-
-	renderGridLines();
+	b.x = (int)(x*spacing+bounds.x);
+	b.y = (int)(y*spacing+bounds.y);
+	b.width = (int)spacing;
+	b.height = (int)spacing;
     }
 
-    public void renderGridLines()
+    public void renderBoard()
     {
+	shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+	shapeRenderer.setColor(boardColor);
+	shapeRenderer.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+	shapeRenderer.end();
+
+	// draw the lines
+	shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+	shapeRenderer.setColor(lineColor);
+	for (int i=0; i<rows+1; i++) {
+	    shapeRenderer.line((int)(bounds.x+i*spacing),
+			       bounds.y,
+			       (int)(bounds.x+i*spacing),
+			       bounds.y+bounds.height);
+	    shapeRenderer.line(bounds.x,
+			       (int)(bounds.y+i*spacing),
+			       bounds.x+bounds.width,
+			       (int)(bounds.y+i*spacing));
+	}
+	shapeRenderer.end();
+
 	//  draw the cross over corner and center pieces
-	int s = (int)spacing;
 	batch.begin();
 	for (int i=0; i<rows; i++) {
 	    for (int j=0; j<rows; j++) {
 		Tile t = viewModel.tile(i,j);
-		tmpBounds.x = i*s+bounds.x;
-		tmpBounds.y = j*s+bounds.y;
-		tmpBounds.width = s;
-		tmpBounds.height = s;
-		draw(res.tile,tmpBounds);
+		tileBounds(i,j,tmpBounds);
 		if (t == Tile.CORNER || t == Tile.CENTER)
 		    draw(res.xtile,tmpBounds);
-		if (selection != null && i == moveX && j == moveY) {
-		    batch.setColor(1.0f,0.0f,0.0f,0.5f);
-		    draw(res.tile,tmpBounds);
-		    batch.setColor(1.0f,1.0f,1.0f,1.0f);
-
-		    batch.setColor(0.5f,0.0f,0.0f,0.5f);
-		    draw(res.tile,tmpBounds);
-		    batch.setColor(1.0f,1.0f,1.0f,1.0f);
-		}
 	    }
 	}
 	batch.end();
 
-	//  draw the last move locations
-	shapeRenderer.setColor(1.0f, 1.0f, 1.0f, 0.5f);
-
+	//  draw the selection
+	shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+	shapeRenderer.setColor(selectionColor);
+	Rectangle b = tmpBounds;
+	for (int i=0; i<rows; i++) {
+	    for (int j=0; j<rows; j++) {
+		Tile t = viewModel.tile(i,j);
+		tileBounds(i,j,b);
+		if (selection != null && i == moveX && j == moveY)
+		    shapeRenderer.rect(b.x,b.y,b.width,b.height);
+	    }
+	}
+	shapeRenderer.setColor(Color.WHITE);
+	shapeRenderer.end();
     }
 
     public void renderPieces()
@@ -299,6 +328,8 @@ public class GdxView extends ApplicationAdapter {
 	if (lastRender != 0)
 	    duration = TimeUtils.timeSinceMillis(lastRender);
 	lastRender = TimeUtils.millis();
+	Gdx.gl.glClearColor(110/255.0f, 86/255.0f, 65/255.0f, 1);
+	Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 	if (settings != null) {
 	    settings.render();
 	    if (settings.startGame()) {
@@ -307,8 +338,6 @@ public class GdxView extends ApplicationAdapter {
 		fillPieces();
 	    }
 	} else {
-	    Gdx.gl.glClearColor(0, 0, 0, 1);
-	    Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 	    stage.act(Gdx.graphics.getDeltaTime());
 	    stage.draw();
 	    cam.update();
@@ -418,6 +447,30 @@ public class GdxView extends ApplicationAdapter {
 	return null;
     }
 
+    public float distance(float x1, float y1, float x2, float y2)
+    {
+	return (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2);
+    }
+
+    public GdxPiece findClosestPiece(float x, float y, float maxD)
+    {
+	GdxPiece closest=null;
+	float minD = 0.0f;
+	maxD *= maxD;
+	for (GdxPiece piece: pieces) {
+	    float cx = piece.bounds.x + piece.bounds.width/2.0f;
+	    float cy = piece.bounds.y + piece.bounds.height/2.0f;
+	    float d = distance(x,y,cx,cy);
+	    if (d < maxD) {
+		if (closest == null || minD > d) {
+		    minD = d;
+		    closest = piece;
+		}
+	    }
+	}
+	return closest;
+    }
+
     public void processLocalMove()
     {
 	// check for user input
@@ -429,17 +482,13 @@ public class GdxView extends ApplicationAdapter {
 
 	    // if we just touched the board then check for hits
 	    if (Gdx.input.justTouched()) {
-		int s = (int)spacing;
-		Rectangle area = new Rectangle(cursor.x-s/2, cursor.y-s/2, s, s);
-		// try to find the piece we are touching
-		for (GdxPiece piece: pieces) {
-		    if (piece.owner() == viewModel.turn() && piece.bounds.overlaps(area)) {
-			selection = piece;
-			selection.bounds.getCenter(dragStart);
-			if (Gdx.app.getType() == ApplicationType.Android) {
-			    dragOffset.x = dragStart.x - cursor.x;
-			    dragOffset.y = dragStart.y - cursor.y;
-			}
+		GdxPiece piece = findClosestPiece((float)cursor.x, (float)cursor.y, (float)spacing/2.0f);
+		if (piece != null && piece.owner() == viewModel.turn()) {
+		    selection = piece;
+		    selection.bounds.getCenter(dragStart);
+		    if (Gdx.app.getType() == ApplicationType.Android) {
+			dragOffset.x = dragStart.x - cursor.x;
+			dragOffset.y = dragStart.y - cursor.y;
 		    }
 		}
 	    }

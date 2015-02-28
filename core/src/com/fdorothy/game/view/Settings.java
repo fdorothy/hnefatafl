@@ -13,12 +13,13 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.CheckBox;
 import com.badlogic.gdx.scenes.scene2d.ui.ButtonGroup;
 import com.badlogic.gdx.scenes.scene2d.ui.SelectBox;
@@ -27,6 +28,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.scenes.scene2d.utils.SpriteDrawable;
 
 public class Settings
 {
@@ -59,7 +61,7 @@ public class Settings
     protected SelectBox gameTypeBox;
 
     // button to finally start the game!
-    protected TextButton startButton;
+    protected ImageButton startButton;
 
     protected boolean start;
 
@@ -107,8 +109,8 @@ public class Settings
 
 	//  create the UI elements
 	settingsLabel = new Label("settings", skin);
-	redLabel = new Label("red", skin);
-	whiteLabel = new Label("white", skin);
+	redLabel = new Label("white", skin);
+	whiteLabel = new Label("black", skin);
 	gameLabel = new Label("game type", skin);
 	redHumanButton = new CheckBox("human", skin);
 	whiteHumanButton = new CheckBox("human", skin);
@@ -121,8 +123,9 @@ public class Settings
 	gameTypes.add(new GameTypeViewModel("ard ri",GameTypes.ARD_RI));
 	gameTypes.add(new GameTypeViewModel("tablut",GameTypes.TABLUT));
 	gameTypeBox.setItems(gameTypes);
-			     
-	startButton = new TextButton("start", skin);
+
+	startButton = new ImageButton(new SpriteDrawable(new Sprite(new Texture(Gdx.files.internal("start.png")))),
+				      new SpriteDrawable(new Sprite(new Texture(Gdx.files.internal("start_down.png")))));
 
 	table.add(settingsLabel).colspan(3).center().pad(10);
 	table.row();
@@ -135,7 +138,7 @@ public class Settings
 	table.add(whiteAIButton).pad(10);
 	table.row();
 	table.add(gameLabel).left().pad(10);
-	table.add(gameTypeBox).colspan(2).pad(10);
+	table.add(gameTypeBox).colspan(2).pad(10).right();
 	table.row();
 	table.add(startButton).width(200).height(50).colspan(3).center().bottom().pad(15).space(100);
 
