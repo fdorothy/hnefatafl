@@ -110,13 +110,15 @@ public class ViewModel
 	return game.turn();
     }
 
-    public void humanMove(Move m)
+    public boolean humanMove(Move m)
     {
 	if (game.isValid(m)) {
 	    game.move(m);
 	    history.addMove(m);
+	    updateCurrentPlayer();
+	    return true;
 	}
-	updateCurrentPlayer();
+	return false;
     }
 
     public Move aiMove()

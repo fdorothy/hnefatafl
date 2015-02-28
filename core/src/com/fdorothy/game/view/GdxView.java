@@ -23,6 +23,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
+import java.lang.Math;
 
 import com.fdorothy.game.ViewModel;
 
@@ -50,6 +51,7 @@ public class GdxView extends ApplicationAdapter {
     private Vector2 dragEnd;
     private Vector2 dragOffset;
     private Vector3 cursor;
+    private int moveX, moveY;
 
     // last-move start/stop;
     private Vector2 lastMoveStart;
@@ -145,6 +147,7 @@ public class GdxView extends ApplicationAdapter {
 				   screen.height-res.whiteTurn.getHeight(),
 				   res.whiteTurn.getWidth(),
 				   res.whiteTurn.getHeight());
+	moveX = moveY = -1;
 	moveAnimations = new Array<Animation>();
 	deathAnimations = new Array<Animation>();
 	animating = false;
@@ -231,40 +234,31 @@ public class GdxView extends ApplicationAdapter {
 
     public void renderGridLines()
     {
-	// draw lines on the board designating tiles
-	//shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-	shapeRenderer.setColor(0.2f,0.2f,0.2f,1.0f);
-	float spacing = bounds.width / rows;
-	// for (int i=0; i<rows; i++) {
-	//     shapeRenderer.line(i*spacing+bounds.x,bounds.y,i*spacing+bounds.x,bounds.y+bounds.height);
-	//     shapeRenderer.line(bounds.x,i*spacing+bounds.y,bounds.x+bounds.width,i*spacing+bounds.y);
-	// }
-
 	//  draw the cross over corner and center pieces
+	int s = (int)spacing;
 	batch.begin();
 	for (int i=0; i<rows; i++) {
 	    for (int j=0; j<rows; j++) {
 		Tile t = viewModel.tile(i,j);
-		tmpBounds.x = i*spacing+bounds.x;
-		tmpBounds.y = j*spacing+bounds.y;
-		tmpBounds.width = spacing;
-		tmpBounds.height = spacing;
+		tmpBounds.x = i*s+bounds.x;
+		tmpBounds.y = j*s+bounds.y;
+		tmpBounds.width = s;
+		tmpBounds.height = s;
 		draw(res.tile,tmpBounds);
 		if (t == Tile.CORNER || t == Tile.CENTER)
 		    draw(res.xtile,tmpBounds);
+		if (selection != null && i == moveX && j == moveY) {
+		    batch.setColor(1.0f,0.0f,0.0f,0.5f);
+		    draw(res.tile,tmpBounds);
+		    batch.setColor(1.0f,1.0f,1.0f,1.0f);
+
+		    batch.setColor(0.5f,0.0f,0.0f,0.5f);
+		    draw(res.tile,tmpBounds);
+		    batch.setColor(1.0f,1.0f,1.0f,1.0f);
+		}
 	    }
 	}
 	batch.end();
-	shapeRenderer.end();
-
-	//  draw the line from the selection start to the selected piece
-	shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-	if (selection != null) {
-	    shapeRenderer.setColor(0.0f, 1.0f, 1.0f, 1.0f);
-	    Rectangle b = selection.getBounds();
-	    shapeRenderer.line(cursor.x+dragOffset.x, cursor.y+dragOffset.y, dragStart.x, dragStart.y);
-	}
-	shapeRenderer.end();
 
 	//  draw the last move locations
 	shapeRenderer.setColor(1.0f, 1.0f, 1.0f, 0.5f);
@@ -452,40 +446,50 @@ public class GdxView extends ApplicationAdapter {
 	    if (selection != null) {
 		selection.bounds.x = (int)(cursor.x-selection.bounds.width/2+dragOffset.x);
 		selection.bounds.y = (int)(cursor.y-selection.bounds.height/2+dragOffset.y);
+
+		int deltaX = (int)(cursor.x-dragStart.x);
+		int deltaY = (int)(cursor.y-dragStart.y);
+		if (Math.abs(deltaX) < Math.abs(deltaY)) {
+		    moveX = selection.x;
+		    moveY = (int)((cursor.y-bounds.y)/spacing);
+		} else {
+		    moveX = (int)((cursor.x-bounds.x)/spacing);
+		    moveY = selection.y;
+		}
 	    }
 	} else {
 	    if (selection != null) {
-		//  figure out the destination x,y coordinates
-		cursor.set(Gdx.input.getX(), Gdx.input.getY(), 0);
-		cam.unproject(cursor);
+
+		// move
 		move.srcX(selection.x);
 		move.srcY(selection.y);
-		move.dstX((int)((cursor.x-bounds.x+dragOffset.x)/spacing));
-		move.dstY((int)((cursor.y-bounds.y+dragOffset.y)/spacing));
-		toScreen(move.srcX(), move.srcY(), lastMoveStart);
-		toScreen(move.dstX(), move.dstY(), lastMoveStop);
+		move.dstX(moveX);
+		move.dstY(moveY);
+		if (viewModel.humanMove(move)) {
 
-		MoveAnimation ma = new MoveAnimation();
-		ma.piece = selection;
+		    // animate the move cycle
+		    MoveAnimation ma = new MoveAnimation();
+		    ma.start = new Vector2();
+		    ma.stop = new Vector2();
+		    ma.piece = selection;
+		    toScreen(selection.x, selection.y, ma.start);
+		    toScreen(moveX, moveY, ma.stop);
+		    moveAnimations.add(ma);
+		    animating = true;
 
-		viewModel.humanMove(move);
+		    // animate the pieces that are removed
+		    Array<GdxPiece> tmp = pieces;
+		    fillPieces();
+		    for (GdxPiece piece:deadPieces(tmp,pieces,ma.piece)) {
+			DeathAnimation da = new DeathAnimation();
+			da.animT = 0.0f;
+			da.piece = piece;
+			deathAnimations.add(da);
+		    }
+		    pieces = tmp;
+		} else
+		    fillPieces();
 		move = new Move();
-
-		ma.start = lastMoveStart;
-		ma.stop = lastMoveStop;
-		moveAnimations.add(ma);
-		animating = true;
-
-		// find the dead
-		Array<GdxPiece> tmp = pieces;
-		fillPieces();
-		for (GdxPiece piece:deadPieces(tmp,pieces,ma.piece)) {
-		    DeathAnimation da = new DeathAnimation();
-		    da.animT = 0.0f;
-		    da.piece = piece;
-		    deathAnimations.add(da);
-		}
-		pieces = tmp;
 	    }
 	    selection=null;
 	}
