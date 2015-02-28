@@ -27,6 +27,7 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.scenes.scene2d.utils.SpriteDrawable;
 
@@ -86,7 +87,7 @@ public class Settings
     {
 	viewModel = vm;
 	res = r;
-	stage = new Stage(new FitViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight()));
+	stage = new Stage(new ExtendViewport(640,480));
 	Gdx.input.setInputProcessor(stage);
 	shapeRenderer = new ShapeRenderer();
 	start=false;
